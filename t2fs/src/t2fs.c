@@ -2,12 +2,19 @@
 /**
 */
 #include "t2fs.h"
+#include <string.h>
 
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
 -----------------------------------------------------------------------------*/
 int identify2 (char *name, int size) {
-	return -1;
+	char alunos[] = "Guilherme B. B. O. Malta - 00278237\nGuilherme T. Bazzo - 00287687\nNicolas C. Duranti - 00287679\n";
+	// Caso o nome dos alunos (com seus respectivos numeros de matricula) nao caibam no espaco dado, retorna erro
+	if(strlen(alunos) >= size){
+		return -1;
+	}
+	strncpy(name, alunos);
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
