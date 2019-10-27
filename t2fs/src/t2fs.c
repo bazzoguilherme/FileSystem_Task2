@@ -2,7 +2,11 @@
 /**
 */
 #include "../include/t2fs.h"
+#include "../include/apidisk.h"
+#include "../include/t2disk.h"
+#include "../include/bitmap2.h"
 #include <string.h>
+#include <math.h>
 
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
@@ -13,17 +17,110 @@ int identify2 (char *name, int size) {
 	if(strlen(alunos) >= size){
 		return -1;
 	}
-	strncpy(name, alunos);
+	strcpy(name, alunos);
 	return 0;
 }
 
 /*-----------------------------------------------------------------------------
+Le do buffer, a partir do endereço especificado, a quantidade de bytes informada.
+Retorna um int com os valores do buffer, considerando que os dados estao em little-endian
+-----------------------------------------------------------------------------*/
+int getDado(unsigned char buffer[], int end_inicio, int qtd){
+    int i;
+    int dado = buffer[end_inicio+qtd-1]; // Dados em little-endian
+
+    for(i=qtd-2; i>=0; i--){
+        dado <<= 8;
+        dado |= buffer[end_inicio+i];
+    }
+
+    return dado;
+}
+
+/*-----------------------------------------------------------------------------
 Função:	Formata logicamente uma partição do disco virtual t2fs_disk.dat para o sistema de
-		arquivos T2FS definido usando blocos de dados de tamanho 
+		arquivos T2FS definido usando blocos de dados de tamanho
 		corresponde a um múltiplo de setores dados por sectors_per_block.
 -----------------------------------------------------------------------------*/
 int format2(int partition, int sectors_per_block) {
-	return -1;
+
+	unsigned char buffer[256];
+
+	if(read_sector(0, buffer)){ // Le o MBR, localizado no primeiro setor
+        return -1;
+	}
+
+	int tam_setor = getDado(buffer, 2, 2);
+	int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
+	int setor_fim = getDado(buffer, 12 + 24*partition, 4);
+	int num_setores = setor_fim - setor_inicio;
+	int num_blocos = num_setores / sectors_per_block;
+	int num_inodes = ceil(0.1 * num_blocos);
+
+    int tam_bloco = sectors_per_block * tam_setor;
+    int num_blocos_bitmap_inode = ceil(num_inodes / tam_bloco);
+    int num_blocos_bitmap_blocos = ceil(num_blocos / tam_bloco);
+
+    struct t2fs_superbloco superbloco;
+    char id[4] = "T2FS";
+    strcpy(superbloco.id, id);
+	superbloco.version = 0x7E32;
+	superbloco.superblockSize = 1;
+	superbloco.freeBlocksBitmapSize = num_blocos_bitmap_blocos;	// Número de blocos do bitmap de blocos de dados
+	superbloco.freeInodeBitmapSize = num_blocos_bitmap_inode;	// Número de blocos do bitmap de i-nodes
+	superbloco.inodeAreaSize = num_inodes;    // Número de blocos reservados para os i-nodes
+	superbloco.blockSize = sectors_per_block; // Número de setores que formam um bloco
+	superbloco.diskSize = num_blocos;         // Número total de blocos da partição
+	//superbloco.Checksum = ;                   // Soma dos 5 primeiros inteiros de 32 bits do superbloco
+
+	if(write_sector(setor_inicio, (unsigned char *)&superbloco)){
+        return -1;
+	}
+
+
+	/// Inicializacao dos Bitmaps
+	if(openBitmap2(setor_inicio)){
+        return -1;
+	}
+
+	// Zera o bitmap de inodes
+	int i=1;
+	do{
+        if((i = searchBitmap2(BITMAP_INODE, 1)) < 0){ // Se retorno da funcao for negativo, deu erro
+            return -1;
+        }
+        if(i){  // Se i for positivo, achou bit com valor 1
+            if(setBitmap2(BITMAP_INODE, i, 0)){
+                return -1;
+            }
+        }
+	}while(i);
+
+
+    // Zera o bitmap de dados
+	do{
+        if((i = searchBitmap2(BITMAP_DADOS, 1)) < 0){ // Se retorno da funcao for negativo, deu erro
+            return -1;
+        }
+        if(i){  // Se i for positivo, achou bit com valor 1
+            if(setBitmap2(BITMAP_DADOS, i, 0)){
+                return -1;
+            }
+        }
+	}while(i);
+
+	// Marca os blocos onde estao o superbloco e os bitmaps como ocupados
+	for(i=0; i < 1 + num_blocos_bitmap_blocos + num_blocos_bitmap_inode; i++){
+        if(setBitmap2(BITMAP_DADOS, i, 1)){     //Primeiro bit eh o 0 ou o 1 ???
+            return -1;
+        }
+	}
+
+	if(closeBitmap2()){
+        return -1;
+	}
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -43,8 +140,8 @@ int unmount(void) {
 /*-----------------------------------------------------------------------------
 Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		sendo, nesse último aspecto, equivalente a função open2.
-		No entanto, diferentemente da open2, se filename referenciar um 
-		arquivo já existente, o mesmo terá seu conteúdo removido e 
+		No entanto, diferentemente da open2, se filename referenciar um
+		arquivo já existente, o mesmo terá seu conteúdo removido e
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
@@ -52,7 +149,7 @@ FILE2 create2 (char *filename) {
 }
 
 /*-----------------------------------------------------------------------------
-Função:	Função usada para remover (apagar) um arquivo do disco. 
+Função:	Função usada para remover (apagar) um arquivo do disco.
 -----------------------------------------------------------------------------*/
 int delete2 (char *filename) {
 	return -1;
