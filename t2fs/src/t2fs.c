@@ -57,7 +57,7 @@ int format2(int partition, int sectors_per_block) {
 	int num_blocos = num_setores / sectors_per_block;
 	int num_inodes = ceil(0.1 * num_blocos);
 
-    int tam_bloco = sectors_per_block * tam_setor;
+    int tam_bloco = sectors_per_block * tam_setor; // Em bytes
     int num_blocos_bitmap_inode = ceil(num_inodes / tam_bloco);
     int num_blocos_bitmap_blocos = ceil(num_blocos / tam_bloco);
 
@@ -110,7 +110,7 @@ int format2(int partition, int sectors_per_block) {
 	}while(i);
 
 	// Marca os blocos onde estao o superbloco e os bitmaps como ocupados
-	for(i=0; i < 1 + num_blocos_bitmap_blocos + num_blocos_bitmap_inode; i++){
+	for(i=0; i < 1 + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++){
         if(setBitmap2(BITMAP_DADOS, i, 1)){     //Primeiro bit eh o 0 ou o 1 ???
             return -1;
         }
