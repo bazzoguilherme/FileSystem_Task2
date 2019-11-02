@@ -78,6 +78,7 @@ int format2(int partition, int sectors_per_block) {
 	}
 
 
+
 	/// Inicializacao dos Bitmaps
 	if(openBitmap2(setor_inicio)){
         return -1;
@@ -115,6 +116,21 @@ int format2(int partition, int sectors_per_block) {
             return -1;
         }
 	}
+
+
+	/// Inicialização do i-node do diretorio raiz (i-node 0)
+	struct t2fs_inode inode_raiz;
+    inode_raiz.blocksFileSize = 0;
+	inode_raiz.bytesFileSize = 0;
+	inode_raiz.dataPtr[0] = -1;
+	inode_raiz.dataPtr[1] = -1;
+	inode_raiz.singleIndPtr = -1;
+	inode_raiz.doubleIndPtr = -1;
+	inode_raiz.RefCounter = 0;
+
+    if(setBitmap2(BITMAP_INODE, 0, 1)){ // Marca o bit do i-node como oucupado
+        return -1;
+    }
 
 	if(closeBitmap2()){
         return -1;
