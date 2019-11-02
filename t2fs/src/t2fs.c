@@ -45,6 +45,7 @@ Função:	Formata logicamente uma partição do disco virtual t2fs_disk.dat para
 int format2(int partition, int sectors_per_block) {
 
 	unsigned char buffer[256];
+	int i;
 
 	if(read_sector(0, buffer)){ // Le o MBR, localizado no primeiro setor
         return -1;
@@ -71,7 +72,17 @@ int format2(int partition, int sectors_per_block) {
 	superbloco.inodeAreaSize = num_inodes;    // Número de blocos reservados para os i-nodes
 	superbloco.blockSize = sectors_per_block; // Número de setores que formam um bloco
 	superbloco.diskSize = num_blocos;         // Número total de blocos da partição
-	//superbloco.Checksum = ;                   // Soma dos 5 primeiros inteiros de 32 bits do superbloco
+
+	// Calculo do checksum
+	unsigned int bytes_iniciais[5];
+	memcmp(bytes_iniciais, &superbloco, 20); // 20 = numero de bytes a serem copiados
+	unsigned int checksum = 0;
+	for(i=0; i<5; i++){
+        checksum += bytes_iniciais[i];
+	}
+	checksum = 1 - checksum; // Complemento de 1
+	superbloco.Checksum = checksum;    // Soma dos 5 primeiros inteiros de 32 bits do superbloco, complementado de 1
+
 
 	if(write_sector(setor_inicio, (unsigned char *)&superbloco)){
         return -1;
@@ -85,7 +96,6 @@ int format2(int partition, int sectors_per_block) {
 	}
 
 	// Zera o bitmap de inodes
-	int i=1;
 	do{
         if((i = searchBitmap2(BITMAP_INODE, 1)) < 0){ // Se retorno da funcao for negativo, deu erro
             return -1;
