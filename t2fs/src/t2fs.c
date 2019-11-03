@@ -8,19 +8,8 @@
 #include <string.h>
 #include <math.h>
 
-/*-----------------------------------------------------------------------------
-Função:	Informa a identificação dos desenvolvedores do T2FS.
------------------------------------------------------------------------------*/
-int identify2 (char *name, int size) {
-	char alunos[] = "Guilherme B. B. O. Malta - 00278237\nGuilherme T. Bazzo - 00287687\nNicolas C. Duranti - 00287679\n";
-	// Caso o nome dos alunos (com seus respectivos numeros de matricula) nao caibam no espaco dado, retorna erro
-	if(strlen(alunos) >= size){
-		return -1;
-	}
-	strcpy(name, alunos);
-	return 0;
-}
 
+/// FUNCOES AUXILIARES
 /*-----------------------------------------------------------------------------
 Le do buffer, a partir do endereço especificado, a quantidade de bytes informada.
 Retorna um int com os valores do buffer, considerando que os dados estao em little-endian
@@ -35,6 +24,20 @@ int getDado(unsigned char buffer[], int end_inicio, int qtd){
     }
 
     return dado;
+}
+
+/// FUNCOES DA BIBLIOTECA
+/*-----------------------------------------------------------------------------
+Função:	Informa a identificação dos desenvolvedores do T2FS.
+-----------------------------------------------------------------------------*/
+int identify2 (char *name, int size) {
+	char alunos[] = "Guilherme B. B. O. Malta - 00278237\nGuilherme T. Bazzo - 00287687\nNicolas C. Duranti - 00287679\n";
+	// Caso o nome dos alunos (com seus respectivos numeros de matricula) nao caibam no espaco dado, retorna erro
+	if(strlen(alunos) >= size){
+		return -1;
+	}
+	strcpy(name, alunos);
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
