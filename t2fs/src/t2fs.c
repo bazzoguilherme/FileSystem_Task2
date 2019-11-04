@@ -8,6 +8,8 @@
 #include <string.h>
 #include <math.h>
 
+#define TAM_SUPERBLOCO 1 // Tam do superbloco em blocos
+#define TAM_INODE 32 // Tam do i-node em bytes
 
 /// FUNCOES AUXILIARES
 /*-----------------------------------------------------------------------------
@@ -59,9 +61,10 @@ int format2(int partition, int sectors_per_block) {
 	int setor_fim = getDado(buffer, 12 + 24*partition, 4);
 	int num_setores = setor_fim - setor_inicio;
 	int num_blocos = num_setores / sectors_per_block;
-	int num_inodes = ceil(0.1 * num_blocos);
+	int num_blocos_inodes = ceil(0.1 * num_blocos);
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
+    int num_inodes = num_blocos_inodes * tam_bloco / TAM_INODE;
     int num_blocos_bitmap_inode = ceil(num_inodes / tam_bloco);
     int num_blocos_bitmap_blocos = ceil(num_blocos / tam_bloco);
 
@@ -72,9 +75,9 @@ int format2(int partition, int sectors_per_block) {
 	superbloco.superblockSize = 1;
 	superbloco.freeBlocksBitmapSize = num_blocos_bitmap_blocos;	// Número de blocos do bitmap de blocos de dados
 	superbloco.freeInodeBitmapSize = num_blocos_bitmap_inode;	// Número de blocos do bitmap de i-nodes
-	superbloco.inodeAreaSize = num_inodes;    // Número de blocos reservados para os i-nodes
-	superbloco.blockSize = sectors_per_block; // Número de setores que formam um bloco
-	superbloco.diskSize = num_blocos;         // Número total de blocos da partição
+	superbloco.inodeAreaSize = num_blocos_inodes;  // Número de blocos reservados para os i-nodes
+	superbloco.blockSize = sectors_per_block;      // Número de setores que formam um bloco
+	superbloco.diskSize = num_blocos;              // Número total de blocos da partição
 
 	// Calculo do checksum
 	unsigned int bytes_iniciais[5];
@@ -124,7 +127,7 @@ int format2(int partition, int sectors_per_block) {
 	}while(i);
 
 	// Marca os blocos onde estao o superbloco e os bitmaps como ocupados
-	for(i=0; i < 1 + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++){
+	for(i=0; i < TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++){
         if(setBitmap2(BITMAP_DADOS, i, 1)){     //Primeiro bit eh o 0 ou o 1 ???
             return -1;
         }
@@ -141,7 +144,13 @@ int format2(int partition, int sectors_per_block) {
 	inode_raiz.doubleIndPtr = -1;
 	inode_raiz.RefCounter = 0;
 
-    if(setBitmap2(BITMAP_INODE, 0, 1)){ // Marca o bit do i-node como oucupado
+	// Bloco de inicio da area de inodes
+	int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
+    if(write_sector(inicio_area_inodes, (unsigned char *)&inode_raiz)){
+        return -1;
+	}
+
+    if(setBitmap2(BITMAP_INODE, 0, 1)){ // Marca o bit do i-node como ocupado
         return -1;
     }
 
