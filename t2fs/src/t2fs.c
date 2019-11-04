@@ -9,8 +9,6 @@
 #include <math.h>
 
 #define TAM_SUPERBLOCO 1 // Tamanho do superbloco em blocos
-#define BYTES_SUPERBLOCO 24 // Tamanho do superbloco em bytes
-#define BYTES_INODE 32 // Tamanho do i-node em bytes
 
 
 /// VARIAVEIS GLOBAIS
@@ -85,7 +83,7 @@ int format2(int partition, int sectors_per_block) {
 	int num_blocos_inodes = ceil(0.1 * num_blocos);
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
-    int num_inodes = num_blocos_inodes * tam_bloco / BYTES_INODE;
+    int num_inodes = num_blocos_inodes * tam_bloco / sizeof(t2fs_inode);
     int num_blocos_bitmap_inode = ceil(num_inodes / tam_bloco);
     int num_blocos_bitmap_blocos = ceil(num_blocos / tam_bloco);
 
@@ -192,7 +190,7 @@ int mount(int partition) {
 	if(read_sector(setor_inicio, buffer)){ // Le o superbloco da particao
         return -1;
 	}
-	memcpy(&superbloco_part_montada, buffer, BYTES_SUPERBLOCO);
+	memcpy(&superbloco_part_montada, buffer, sizeof(t2fs_superbloco));
 
     for(i=0; i<10; i++){ // Limpa a tabela de arquivos abertos
         tabela_arquivos_abertos[i] = 0;
