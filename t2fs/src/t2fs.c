@@ -192,9 +192,10 @@ int mount(int partition) {
 	}
 	memcpy(&superbloco_part_montada, buffer, sizeof(t2fs_superbloco));
 
-    for(i=0; i<10; i++){ // Limpa a tabela de arquivos abertos
-        tabela_arquivos_abertos[i] = 0;
-    }
+	if(!(checksum(&superbloco_part_montada) == superbloco_part_montada.checksum)){
+		return -1;
+	}
+	
     tem_particao_montada = 1;
 
 	return 0;
@@ -204,6 +205,10 @@ int mount(int partition) {
 Função:	Desmonta a partição atualmente montada, liberando o ponto de montagem.
 -----------------------------------------------------------------------------*/
 int unmount(void) {
+	
+//for(i=0; i<10; i++){ // Limpa a tabela de arquivos abertos
+//        tabela_arquivos_abertos[i] = 0;
+//    }
 	return -1;
 }
 
