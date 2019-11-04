@@ -35,6 +35,20 @@ int getDado(unsigned char buffer[], int end_inicio, int qtd){
     return dado;
 }
 
+/*-----------------------------------------------------------------------------
+Calculo do checksum de um superbloco
+-----------------------------------------------------------------------------*/
+unsigned int checksum(t2fs_superbloco *superbloco){
+	unsigned int bytes_iniciais[5];
+	memcpy(bytes_iniciais, superbloco, 20); // 20 = numero de bytes a serem copiados
+	unsigned int checksum = 0;
+	for(i=0; i<5; i++){
+        checksum += bytes_iniciais[i];
+	}
+	checksum = 1 - checksum; // Complemento de 1
+	return checksum;
+}
+	
 /// FUNCOES DA BIBLIOTECA
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
@@ -85,16 +99,7 @@ int format2(int partition, int sectors_per_block) {
 	superbloco.inodeAreaSize = num_blocos_inodes;  // Número de blocos reservados para os i-nodes
 	superbloco.blockSize = sectors_per_block;      // Número de setores que formam um bloco
 	superbloco.diskSize = num_blocos;              // Número total de blocos da partição
-
-	// Calculo do checksum
-	unsigned int bytes_iniciais[5];
-	memcpy(bytes_iniciais, &superbloco, 20); // 20 = numero de bytes a serem copiados
-	unsigned int checksum = 0;
-	for(i=0; i<5; i++){
-        checksum += bytes_iniciais[i];
-	}
-	checksum = 1 - checksum; // Complemento de 1
-	superbloco.Checksum = checksum;    // Soma dos 5 primeiros inteiros de 32 bits do superbloco, complementado de 1
+	superbloco.Checksum = checksum(&superbloco);   // Soma dos 5 primeiros inteiros de 32 bits do superbloco, complementado de 1
 
 
 	if(write_sector(setor_inicio, (unsigned char *)&superbloco)){
