@@ -81,7 +81,7 @@ int format2(int partition, int sectors_per_block) {
 
 	// Calculo do checksum
 	unsigned int bytes_iniciais[5];
-	memcmp(bytes_iniciais, &superbloco, 20); // 20 = numero de bytes a serem copiados
+	memcpy(bytes_iniciais, &superbloco, 20); // 20 = numero de bytes a serem copiados
 	unsigned int checksum = 0;
 	for(i=0; i<5; i++){
         checksum += bytes_iniciais[i];
