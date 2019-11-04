@@ -8,8 +8,15 @@
 #include <string.h>
 #include <math.h>
 
-#define TAM_SUPERBLOCO 1 // Tam do superbloco em blocos
-#define TAM_INODE 32 // Tam do i-node em bytes
+#define TAM_SUPERBLOCO 1 // Tamanho do superbloco em blocos
+#define BYTES_SUPERBLOCO 24 // Tamanho do superbloco em bytes
+#define BYTES_INODE 32 // Tamanho do i-node em bytes
+
+
+/// VARIAVEIS GLOBAIS
+struct t2fs_superbloco superbloco_part_montada; // Variavel que guarda as informacoes do superbloco da particao montada
+int tem_particao_montada = 0; // Booleano indicando se tem alguma particao ja montada
+int tabela_arquivos_abertos[10] = {0}; // Maximo de 10 arquivos abertos por vez
 
 /// FUNCOES AUXILIARES
 /*-----------------------------------------------------------------------------
@@ -64,7 +71,7 @@ int format2(int partition, int sectors_per_block) {
 	int num_blocos_inodes = ceil(0.1 * num_blocos);
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
-    int num_inodes = num_blocos_inodes * tam_bloco / TAM_INODE;
+    int num_inodes = num_blocos_inodes * tam_bloco / BYTES_INODE;
     int num_blocos_bitmap_inode = ceil(num_inodes / tam_bloco);
     int num_blocos_bitmap_blocos = ceil(num_blocos / tam_bloco);
 
@@ -165,7 +172,29 @@ int format2(int partition, int sectors_per_block) {
 Função:	Monta a partição indicada por "partition" no diretório raiz
 -----------------------------------------------------------------------------*/
 int mount(int partition) {
-	return -1;
+    unsigned char buffer[256];
+    int i;
+
+    if(tem_particao_montada){
+        return -1;
+    }
+
+    if(read_sector(0, buffer)){ // Le o MBR, localizado no primeiro setor
+        return -1;
+	}
+
+	int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
+	if(read_sector(setor_inicio, buffer)){ // Le o superbloco da particao
+        return -1;
+	}
+	memcpy(&superbloco_part_montada, buffer, BYTES_SUPERBLOCO);
+
+    for(i=0; i<10; i++){ // Limpa a tabela de arquivos abertos
+        tabela_arquivos_abertos[i] = 0;
+    }
+    tem_particao_montada = 1;
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
