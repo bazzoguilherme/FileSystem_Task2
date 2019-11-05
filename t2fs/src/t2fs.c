@@ -150,7 +150,7 @@ int format2(int partition, int sectors_per_block) {
 
 	// Marca os blocos onde estao o superbloco e os bitmaps como ocupados
 	for(i=0; i < TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++){
-        if(setBitmap2(BITMAP_DADOS, i, 1)){     //Primeiro bit eh o 0 ou o 1 ???
+        if(setBitmap2(BITMAP_DADOS, i, 1)){
             return -1;
         }
 	}
@@ -187,8 +187,9 @@ int format2(int partition, int sectors_per_block) {
 Função:	Monta a partição indicada por "partition" no diretório raiz
 -----------------------------------------------------------------------------*/
 int mount(int partition) {
+
     unsigned char buffer[256];
-    // int i;
+    int i;
 
     if(tem_particao_montada){
         return -1;
@@ -204,11 +205,16 @@ int mount(int partition) {
 	}
 	memcpy(&superbloco_part_montada, buffer, sizeof(struct t2fs_superbloco));
 
+	// Verifica se o superbloco foi formatado
 	if(!(checksum(&superbloco_part_montada) == superbloco_part_montada.Checksum)){
 		return -1;
 	}
 
     tem_particao_montada = 1;
+
+    for(i=0; i<MAX_OPEN_FILE; i++){ // Inicializa/Limpa a tabela de arquivos abertos
+        open_files[i].current_pointer = -1;
+    }
 
 	return 0;
 }
@@ -218,10 +224,8 @@ Função:	Desmonta a partição atualmente montada, liberando o ponto de montage
 -----------------------------------------------------------------------------*/
 int unmount(void) {
 
-//for(i=0; i<10; i++){ // Limpa a tabela de arquivos abertos
-//        tabela_arquivos_abertos[i] = 0;
-//    }
-	return -1;
+    tem_particao_montada = 0;
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
