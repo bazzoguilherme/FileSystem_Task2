@@ -306,7 +306,24 @@ FILE2 open2 (char *filename) {
 Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
 int close2 (FILE2 handle) {
-	return -1;
+    // handle: identificador de arquivo para fechar
+    int pos_file = 0;
+    while (open_files[pos_file].handle != handle && pos_file < MAX_OPEN_FILE){
+        pos_file++;
+    }
+
+    if (pos_file >= MAX_OPEN_FILE){ // Não encontrou arquivo
+        return -1;
+	}
+
+	// Caso arquivo já esteja marcado como fechado (current_pointer == -1)
+	if (open_files[pos_file].current_pointer < 0){ // (<= 0)??
+        return -1;
+	}
+
+	open_files[pos_file].current_pointer = -1; // Marca arquivo como fechado (current_pointer == -1)
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
