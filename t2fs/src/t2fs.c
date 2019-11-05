@@ -13,6 +13,7 @@
 
 
 typedef struct file_t2fs {
+    FILE2 handle;
     char filename[MAX_FILE_NAME_SIZE+1];
     int current_pointer;
 }FILE_T2FS;
@@ -268,14 +269,15 @@ FILE2 create2 (char *filename) {
         return -1;
     }
 
+    FILE2 handle_created_file = open2(filename);
+
     /// File
     FILE_T2FS new_open_file;
+    new_open_file.handle = handle_created_file;
     new_open_file.current_pointer = 0;
     strcpy(new_open_file.filename, filename);
 
     open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
-
-    FILE2 handle_created_file = open2(filename);
 
     if (handle_created_file < 0){
         return -1;
