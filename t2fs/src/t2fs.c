@@ -43,10 +43,10 @@ unsigned int checksum(t2fs_superbloco *superbloco){
 	for(i=0; i<5; i++){
         checksum += bytes_iniciais[i];
 	}
-	checksum = 1 - checksum; // Complemento de 1
+	checksum = !checksum; // Complemento de 1
 	return checksum;
 }
-	
+
 /// FUNCOES DA BIBLIOTECA
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
@@ -195,7 +195,7 @@ int mount(int partition) {
 	if(!(checksum(&superbloco_part_montada) == superbloco_part_montada.checksum)){
 		return -1;
 	}
-	
+
     tem_particao_montada = 1;
 
 	return 0;
@@ -205,7 +205,7 @@ int mount(int partition) {
 Função:	Desmonta a partição atualmente montada, liberando o ponto de montagem.
 -----------------------------------------------------------------------------*/
 int unmount(void) {
-	
+
 //for(i=0; i<10; i++){ // Limpa a tabela de arquivos abertos
 //        tabela_arquivos_abertos[i] = 0;
 //    }
