@@ -9,6 +9,17 @@
 #include <math.h>
 
 #define TAM_SUPERBLOCO 1 // Tamanho do superbloco em blocos
+#define MAX_OPEN_FILE 10
+
+
+typedef struct file_t2fs {
+    char filename[MAX_FILE_NAME_SIZE+1];
+    int current_pointer;
+}FILE_T2FS;
+
+
+FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Mantém arquivos abertos - Inicializa zerado indicando que todos os lugares
+                                // estão livres para recever arquivos.
 
 
 /// VARIAVEIS GLOBAIS
@@ -221,7 +232,58 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
-	return -1;
+    if (!filename){ // Caso filename seja NULL retorna -1
+        return -1;
+    }
+    if (filename[0] == '\0'){ // Caso filename seja um nome vazio retorna -1
+        return -1;
+    }
+
+    // TODO: procurar se há algum arquivo no disco com mesmo nome.
+        // Caso já existir, remove o conteúdo, assumindo tamanho de zero bytes.
+
+    /// T2FS Record
+    struct t2fs_record created_file_record;
+    created_file_record.TypeVal = 0x01; // Registro regular
+    if (strlen(filename) > 50){ // Caso o nome passado como parametro seja maior que o tamanho máximo
+        return -1;              //   do campo `name` para registro.
+    }
+    strcpy(created_file_record.name, filename);
+
+    // write_sector(POS_SECTOR, (char*) created_file_record);
+
+    boolean encontrou_espaco_open_files = false;
+    int pos_insercao_open_file = -1;
+    while ((!encontrou_espaco_open_files) && (pos_insercao_open_file < MAX_OPEN_FILE)){
+        // Varre array de arquivos abertos para adicionar o novo arquivo a eles.
+        pos_insercao_open_file++;
+
+        /* Comment: função de inicialização, caso current_pointer < 0 indica que é inválido (espaço disponível para inserir novo arquivo) */
+        if (open_files[pos_insercao_open_file].current_pointer >= 0) {
+            encontrou_espaco_open_files = true;
+        }
+    }
+
+    if (pos_insercao_open_file >= 10){ // Retorna -1 caso já haja 10 ou mais arquivos abertos
+        return -1;
+    }
+
+    /// File
+    FILE_T2FS new_open_file;
+    new_open_file.current_pointer = 0;
+    strcpy(new_open_file.filename, filename);
+
+    open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
+
+    FILE2 handle_created_file = open2(filename);
+
+    if (handle_created_file < 0){
+        return -1;
+    }
+
+    // TODO - Seta bitmap como ocupado.
+
+    return handle_created_file; // Retorna handle de arquivo aberto
 }
 
 /*-----------------------------------------------------------------------------
