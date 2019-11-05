@@ -36,10 +36,11 @@ int getDado(unsigned char buffer[], int end_inicio, int qtd){
 /*-----------------------------------------------------------------------------
 Calculo do checksum de um superbloco
 -----------------------------------------------------------------------------*/
-unsigned int checksum(t2fs_superbloco *superbloco){
+unsigned int checksum(struct t2fs_superbloco *superbloco){
 	unsigned int bytes_iniciais[5];
 	memcpy(bytes_iniciais, superbloco, 20); // 20 = numero de bytes a serem copiados
 	unsigned int checksum = 0;
+	int i=0;
 	for(i=0; i<5; i++){
         checksum += bytes_iniciais[i];
 	}
@@ -83,7 +84,7 @@ int format2(int partition, int sectors_per_block) {
 	int num_blocos_inodes = ceil(0.1 * num_blocos);
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
-    int num_inodes = num_blocos_inodes * tam_bloco / sizeof(t2fs_inode);
+    int num_inodes = num_blocos_inodes * tam_bloco / sizeof(struct t2fs_inode);
     int num_blocos_bitmap_inode = ceil(num_inodes / tam_bloco);
     int num_blocos_bitmap_blocos = ceil(num_blocos / tam_bloco);
 
@@ -176,7 +177,7 @@ Função:	Monta a partição indicada por "partition" no diretório raiz
 -----------------------------------------------------------------------------*/
 int mount(int partition) {
     unsigned char buffer[256];
-    int i;
+    // int i;
 
     if(tem_particao_montada){
         return -1;
@@ -190,9 +191,9 @@ int mount(int partition) {
 	if(read_sector(setor_inicio, buffer)){ // Le o superbloco da particao
         return -1;
 	}
-	memcpy(&superbloco_part_montada, buffer, sizeof(t2fs_superbloco));
+	memcpy(&superbloco_part_montada, buffer, sizeof(struct t2fs_superbloco));
 
-	if(!(checksum(&superbloco_part_montada) == superbloco_part_montada.checksum)){
+	if(!(checksum(&superbloco_part_montada) == superbloco_part_montada.Checksum)){
 		return -1;
 	}
 
