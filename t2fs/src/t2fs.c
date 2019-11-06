@@ -13,7 +13,6 @@
 
 
 typedef struct file_t2fs {
-    FILE2 handle;
     char filename[MAX_FILE_NAME_SIZE+1];
     int current_pointer;
 }FILE_T2FS;
@@ -257,35 +256,10 @@ FILE2 create2 (char *filename) {
 
     // write_sector(POS_SECTOR, (char*) created_file_record);
 
-    int pos_insercao_open_file = 0;
-    while ((open_files[pos_insercao_open_file].current_pointer >= 0) && (pos_insercao_open_file < MAX_OPEN_FILE)){
-        // Varre array de arquivos abertos para adicionar o novo arquivo a eles.
-        pos_insercao_open_file++;
-
-        /* Comment: função de inicialização, caso current_pointer < 0 indica que é inválido (espaço disponível para inserir novo arquivo) */
-    }
-
-    if (pos_insercao_open_file >= 10){ // Retorna -1 caso já haja 10 ou mais arquivos abertos
-        return -1;
-    }
-
-    FILE2 handle_created_file = open2(filename);
-
-    /// File
-    FILE_T2FS new_open_file;
-    new_open_file.handle = handle_created_file;
-    new_open_file.current_pointer = 0;
-    strcpy(new_open_file.filename, filename);
-
-    open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
-
-    if (handle_created_file < 0){
-        return -1;
-    }
-
     // TODO - Seta bitmap como ocupado.
 
-    return handle_created_file; // Retorna handle de arquivo aberto
+    return open2(filename);
+
 }
 
 /*-----------------------------------------------------------------------------
@@ -299,6 +273,31 @@ int delete2 (char *filename) {
 Função:	Função que abre um arquivo existente no disco.
 -----------------------------------------------------------------------------*/
 FILE2 open2 (char *filename) {
+    /*
+    int pos_insercao_open_file = 0;
+    while ((open_files[pos_insercao_open_file].current_pointer >= 0) && (pos_insercao_open_file < MAX_OPEN_FILE)){
+        // Varre array de arquivos abertos para adicionar o novo arquivo a eles.
+        pos_insercao_open_file++;
+
+        // Comment: função de inicialização, caso current_pointer < 0 indica que é inválido (espaço disponível para inserir novo arquivo)
+    }
+
+    if (pos_insercao_open_file >= 10){ // Retorna -1 caso já haja 10 ou mais arquivos abertos
+        return -1;
+    }
+
+    /// File
+    FILE_T2FS new_open_file;
+    new_open_file.current_pointer = 0;
+    strcpy(new_open_file.filename, filename);
+
+    open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
+
+    if (handle_created_file < 0){
+        return -1;
+    }
+
+    */
 	return -1;
 }
 
@@ -307,21 +306,23 @@ Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
 int close2 (FILE2 handle) {
     // handle: identificador de arquivo para fechar
-    int pos_file = 0;
-    while (open_files[pos_file].handle != handle && pos_file < MAX_OPEN_FILE){
-        pos_file++;
-    }
+    //int pos_file = 0;
+    //while (open_files[pos_file].handle != handle && pos_file < MAX_OPEN_FILE){
+    //    pos_file++;
+    //}
 
-    if (pos_file >= MAX_OPEN_FILE){ // Não encontrou arquivo
-        return -1;
-	}
+    //if (pos_file >= MAX_OPEN_FILE){ // Não encontrou arquivo
+    //   return -1;
+	//}
 
 	// Caso arquivo já esteja marcado como fechado (current_pointer == -1)
-	if (open_files[pos_file].current_pointer < 0){ // (<= 0)??
+	if (open_files[handle].current_pointer < 0){ // (<= 0)??
         return -1;
 	}
 
-	open_files[pos_file].current_pointer = -1; // Marca arquivo como fechado (current_pointer == -1)
+	open_files[handle].current_pointer = -1; // Marca arquivo como fechado (current_pointer == -1)
+
+
 
 	return 0;
 }
