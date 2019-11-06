@@ -273,17 +273,19 @@ int delete2 (char *filename) {
 Função:	Função que abre um arquivo existente no disco.
 -----------------------------------------------------------------------------*/
 FILE2 open2 (char *filename) {
-    /*
+
+    // TODO - procura arquivo no disco
+        // - Le arquivo do disco
+
+    // Procura posicao para inserir arquivo
     int pos_insercao_open_file = 0;
     while ((open_files[pos_insercao_open_file].current_pointer >= 0) && (pos_insercao_open_file < MAX_OPEN_FILE)){
         // Varre array de arquivos abertos para adicionar o novo arquivo a eles.
         pos_insercao_open_file++;
-
-        // Comment: função de inicialização, caso current_pointer < 0 indica que é inválido (espaço disponível para inserir novo arquivo)
     }
 
     if (pos_insercao_open_file >= 10){ // Retorna -1 caso já haja 10 ou mais arquivos abertos
-        return -1;
+        return -1;                      // Isso significa que não há espaço disponível para abrir arquivo
     }
 
     /// File
@@ -293,12 +295,7 @@ FILE2 open2 (char *filename) {
 
     open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
 
-    if (handle_created_file < 0){
-        return -1;
-    }
-
-    */
-	return -1;
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
