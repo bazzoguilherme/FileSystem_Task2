@@ -18,14 +18,11 @@ typedef struct file_t2fs {
 }FILE_T2FS;
 
 
-FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Mantém arquivos abertos - Inicializa zerado indicando que todos os lugares
-                                // estão livres para recever arquivos.
-
-
 /// VARIAVEIS GLOBAIS
 struct t2fs_superbloco superbloco_part_montada; // Variavel que guarda as informacoes do superbloco da particao montada
 boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
-int tabela_arquivos_abertos[10] = {0}; // Maximo de 10 arquivos abertos por vez
+FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
+
 
 /// FUNCOES AUXILIARES
 /*-----------------------------------------------------------------------------
