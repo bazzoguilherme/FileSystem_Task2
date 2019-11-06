@@ -24,7 +24,7 @@ FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Mantém arquivos abertos - Iniciali
 
 /// VARIAVEIS GLOBAIS
 struct t2fs_superbloco superbloco_part_montada; // Variavel que guarda as informacoes do superbloco da particao montada
-int tem_particao_montada = 0; // Booleano indicando se tem alguma particao ja montada
+boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
 int tabela_arquivos_abertos[10] = {0}; // Maximo de 10 arquivos abertos por vez
 
 /// FUNCOES AUXILIARES
@@ -210,7 +210,7 @@ int mount(int partition) {
 		return -1;
 	}
 
-    tem_particao_montada = 1;
+    tem_particao_montada = true;
 
     for(i=0; i<MAX_OPEN_FILE; i++){ // Inicializa/Limpa a tabela de arquivos abertos
         open_files[i].current_pointer = -1;
@@ -224,7 +224,7 @@ Função:	Desmonta a partição atualmente montada, liberando o ponto de montage
 -----------------------------------------------------------------------------*/
 int unmount(void) {
 
-    tem_particao_montada = 0;
+    tem_particao_montada = false;
 	return 0;
 }
 
