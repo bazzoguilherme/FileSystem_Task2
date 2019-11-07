@@ -10,6 +10,7 @@
 
 #define TAM_SUPERBLOCO 1 // Tamanho do superbloco em blocos
 #define MAX_OPEN_FILE 10
+#define TAM_SETOR 256    // Tamanho de um setor em bytes
 
 
 typedef struct file_t2fs {
@@ -19,7 +20,7 @@ typedef struct file_t2fs {
 
 
 /// VARIAVEIS GLOBAIS
-struct t2fs_superbloco superbloco_part_montada; // Variavel que guarda as informacoes do superbloco da particao montada
+struct t2fs_superbloco superbloco_montado; // Variavel que guarda as informacoes do superbloco da particao montada
 boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
 FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
 
@@ -166,7 +167,7 @@ int format2(int partition, int sectors_per_block) {
 	inode_raiz.dataPtr[1] = -1;
 	inode_raiz.singleIndPtr = -1;
 	inode_raiz.doubleIndPtr = -1;
-	inode_raiz.RefCounter = 0;
+	inode_raiz.RefCounter = 1;
 
 	// Bloco de inicio da area de inodes
 	int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
@@ -210,10 +211,10 @@ int mount(int partition) {
 	if(read_sector(setor_inicio, buffer)){ // Le o superbloco da particao
         return -1;
 	}
-	memcpy(&superbloco_part_montada, buffer, sizeof(struct t2fs_superbloco));
+	memcpy(&superbloco_montado, buffer, sizeof(struct t2fs_superbloco));
 
 	// Verifica se o superbloco foi formatado
-	if(!(checksum(&superbloco_part_montada) == superbloco_part_montada.Checksum)){
+	if(!(checksum(&superbloco_montado) == superbloco_montado.Checksum)){
 		return -1;
 	}
 
@@ -223,6 +224,10 @@ int mount(int partition) {
         open_files[i].current_pointer = -1;
     }
 
+    if(openBitmap2(setor_inicio)){  // Abre os bitmaps da particao montada
+        return -1;
+	}
+
 	return 0;
 }
 
@@ -231,6 +236,9 @@ Função:	Desmonta a partição atualmente montada, liberando o ponto de montage
 -----------------------------------------------------------------------------*/
 int unmount(void) {
 
+    if(closeBitmap2()){ // Fecha os bitmaps da particao
+        return -1;
+    }
     tem_particao_montada = false;
 	return 0;
 }
@@ -243,6 +251,11 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
+
+    if(!tem_particao_montada){
+        return -1;
+    }
+
     if (!filename){ // Caso filename seja NULL retorna -1
         return -1;
     }
@@ -253,20 +266,68 @@ FILE2 create2 (char *filename) {
     // TODO: procurar se há algum arquivo no disco com mesmo nome.
         // Caso já existir, remove o conteúdo, assumindo tamanho de zero bytes.
 
+
+
     /// T2FS Record
     struct t2fs_record created_file_record;
-    created_file_record.TypeVal = 0x01; // Registro regular
+    created_file_record.TypeVal = TYPEVAL_REGULAR; // Registro regular
     if (strlen(filename) > 50){ // Caso o nome passado como parametro seja maior que o tamanho máximo
         return -1;              //   do campo `name` para registro.
     }
     strcpy(created_file_record.name, filename);
 
-    // write_sector(POS_SECTOR, (char*) created_file_record);
 
-    // TODO - Seta bitmap como ocupado.
+    // Selecao de um bloco de dados para o arquivo
+    int indice_bloco_dados;
+    if((indice_bloco_dados = searchBitmap2(BITMAP_DADOS, 0)) <= 0){ // Se retorno da funcao for negativo, deu erro
+            return -1;                                              // Se for 0, nao ha blocos livres
+    }
+
+    // Selecao de um i-node para o arquivo
+    int indice_inode;
+    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0){ // Se retorno da funcao for negativo, deu erro
+            return -1;                                        // Se for 0, nao ha blocos livres
+    }
+
+    /// inicializacao i-node
+    struct t2fs_inode new_inode;
+	new_inode.blocksFileSize = 1;
+	new_inode.bytesFileSize = 0;
+	new_inode.dataPtr[0] = indice_bloco_dados;
+	new_inode.dataPtr[1] = -1;
+	new_inode.singleIndPtr = -1;
+	new_inode.doubleIndPtr = -1;
+	new_inode.RefCounter = 1;
+
+	created_file_record.inodeNumber = indice_inode;
+
+	/// Escrita do i-node no disco
+	int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+	int setor_novo_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+	int end_novo_inode = indice_inode % inodes_por_setor;
+
+	unsigned char buffer[TAM_SETOR];
+	if(read_sector(setor_novo_inode, buffer)){
+        return -1;
+	}
+	memcpy(&buffer[end_novo_inode], &new_inode, sizeof(struct t2fs_inode));
+	if(write_sector(setor_novo_inode, buffer)){
+        return -1;
+	}
+
+    if(setBitmap2(BITMAP_INODE, indice_inode, 1)){
+        return -1;
+    }
+    if(setBitmap2(BITMAP_DADOS, indice_bloco_dados, 1)){
+        setBitmap2(BITMAP_INODE, indice_inode, 0);
+        return -1;
+    }
+
+    // TODO: Adiciona registro na lista de registros
 
     return open2(filename);
-
 }
 
 /*-----------------------------------------------------------------------------
