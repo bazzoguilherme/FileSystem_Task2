@@ -84,6 +84,11 @@ int format2(int partition, int sectors_per_block) {
         return -1;
 	}
 
+	int num_particoes = getDado(buffer, 6, 2);
+	if(partition < 0 || partition >= num_particoes){ // Verifica se a particao é valida (entre 0 e num-1)
+        return -1;
+	}
+
 	int tam_setor = getDado(buffer, 2, 2);
 	int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
 	int setor_fim = getDado(buffer, 12 + 24*partition, 4);
@@ -193,6 +198,11 @@ int mount(int partition) {
     }
 
     if(read_sector(0, buffer)){ // Le o MBR, localizado no primeiro setor
+        return -1;
+	}
+
+    int num_particoes = getDado(buffer, 6, 2);
+	if(partition < 0 || partition >= num_particoes){ // Verifica se a particao é valida (entre 0 e num-1)
         return -1;
 	}
 
