@@ -430,10 +430,12 @@ int delete2 (char *filename) {
         return -1;
     }
 
-    if (!contains(arquivos_diretorio, filename)){ // Caso não hava o arquivo no diretorio, retorna erro
+    if (!contains(arquivos_diretorio, filename)){ // Caso não haja o arquivo no diretorio, retorna erro
         return -1;
     }
     arquivos_diretorio = delete_element(arquivos_diretorio, filename); // Deleta o arquivo da lista de arquivos do diretorio
+
+    // Seta bitmaps como desocupados (limpa blocos de dados)
 
 	return -1;
 }
