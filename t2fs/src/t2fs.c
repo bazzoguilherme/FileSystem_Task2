@@ -24,7 +24,6 @@ typedef struct linked_list {
     struct linked_list* next;
 } Linked_List;
 
-
 /// Funcoes Linked-List
 Linked_List* create_linked_list(){
     return NULL;
@@ -48,7 +47,7 @@ Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_) {
     return list;
 }
 
-Linked_List* delete_element(Linked_List* list, struct t2fs_record registro_){
+Linked_List* delete_element(Linked_List* list, char* nome_registro_){
     Linked_List* aux = NULL;
     Linked_List* freed_node = list;
 
@@ -56,17 +55,17 @@ Linked_List* delete_element(Linked_List* list, struct t2fs_record registro_){
         return NULL;
     }
 
-    if (strcmp(list->registro.name, registro_.name) == 0){
+    if (strcmp(list->registro.name, nome_registro_) == 0){
         aux = list->next;
         free(list);
         return aux;
     }
 
-    while(freed_node->next!=NULL && strcmp(freed_node->registro.name, registro_.name) != 0 ){
+    while(freed_node->next!=NULL && strcmp(freed_node->registro.name, nome_registro_) != 0 ){
         aux = freed_node;
         freed_node = freed_node->next;
     }
-    if (strcmp(freed_node->registro.name, registro_.name) == 0){
+    if (strcmp(freed_node->registro.name, nome_registro_) == 0){
         aux->next = freed_node->next;
         free(freed_node);
     }
@@ -74,10 +73,10 @@ Linked_List* delete_element(Linked_List* list, struct t2fs_record registro_){
     return list;
 }
 
-boolean contains(Linked_List* list, struct t2fs_record registro_){
+boolean contains(Linked_List* list, char* nome_registro_){
     Linked_List* aux = list;
     while (aux!=NULL){
-        if(strcmp(aux->registro.name, registro_.name) == 0){
+        if(strcmp(aux->registro.name, nome_registro_) == 0){
             return true;
         }
         aux = aux->next;
@@ -90,7 +89,7 @@ boolean contains(Linked_List* list, struct t2fs_record registro_){
 struct t2fs_superbloco superbloco_montado; // Variavel que guarda as informacoes do superbloco da particao montada
 boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
 FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
-
+Linked_List* arquivos_diretorio = NULL; // Lista de arquivos do diretorio
 
 /// FUNCOES AUXILIARES
 /*-----------------------------------------------------------------------------
@@ -122,6 +121,22 @@ unsigned int checksum(struct t2fs_superbloco *superbloco){
 	}
 	checksum = !checksum; // Complemento de 1
 	return checksum;
+}
+
+/*-----------------------------------------------------------------------------
+Procuna nos arquivos abertos se há um arquivo de nome 'filename'
+    Retorno:
+        - True: caso arquivo encontrado
+        - False: caso contrario
+-----------------------------------------------------------------------------*/
+boolean open_files_contem_arquivo(char* filename){
+	int i = 0;
+	for (i=0; i<MAX_OPEN_FILE; i++){
+        if (open_files[i].current_pointer != -1 && strcmp(open_files[i].filename, filename) == 0){
+            return true;
+        }
+	}
+	return false;
 }
 
 /// FUNCOES DA BIBLIOTECA
@@ -332,6 +347,11 @@ FILE2 create2 (char *filename) {
 
     // TODO: procurar se há algum arquivo no disco com mesmo nome.
         // Caso já existir, remove o conteúdo, assumindo tamanho de zero bytes.
+    if (contains(arquivos_diretorio, filename)){
+        if (delete2(filename) != 0){
+            return -1;
+        }
+    }
 
 
 
@@ -405,6 +425,16 @@ int delete2 (char *filename) {
     if(!tem_particao_montada){
         return -1;
     }
+
+    if(open_files_contem_arquivo(filename)){ // Caso o arquivo esteja aberto, retorna erro
+        return -1;
+    }
+
+    if (!contains(arquivos_diretorio, filename)){ // Caso não hava o arquivo no diretorio, retorna erro
+        return -1;
+    }
+    arquivos_diretorio = delete_element(arquivos_diretorio, filename); // Deleta o arquivo da lista de arquivos do diretorio
+
 	return -1;
 }
 
