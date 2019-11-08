@@ -6,6 +6,7 @@
 #include "../include/t2disk.h"
 #include "../include/bitmap2.h"
 #include <string.h>
+#include <stdlib.h>
 #include <math.h>
 
 #define TAM_SUPERBLOCO 1 // Tamanho do superbloco em blocos
@@ -17,6 +18,72 @@ typedef struct file_t2fs {
     char filename[MAX_FILE_NAME_SIZE+1];
     int current_pointer;
 }FILE_T2FS;
+
+typedef struct linked_list {
+    struct t2fs_record registro;
+    struct linked_list* next;
+} Linked_List;
+
+
+/// Funcoes Linked-List
+Linked_List* create_linked_list(){
+    return NULL;
+}
+
+Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_) {
+    Linked_List* new_node = (Linked_List*)malloc(sizeof(Linked_List));
+    new_node->registro = registro_;
+    new_node->next = NULL;
+
+    if (list == NULL){
+        return new_node;
+    }
+
+    Linked_List* aux = list;
+    while (aux->next != NULL){
+        aux = aux->next;
+    }
+    aux->next = new_node;
+
+    return list;
+}
+
+Linked_List* delete_element(Linked_List* list, struct t2fs_record registro_){
+    Linked_List* aux = NULL;
+    Linked_List* freed_node = list;
+
+    if (list == NULL){
+        return NULL;
+    }
+
+    if (strcmp(list->registro.name, registro_.name) == 0){
+        aux = list->next;
+        free(list);
+        return aux;
+    }
+
+    while(freed_node->next!=NULL && strcmp(freed_node->registro.name, registro_.name) != 0 ){
+        aux = freed_node;
+        freed_node = freed_node->next;
+    }
+    if (strcmp(freed_node->registro.name, registro_.name) == 0){
+        aux->next = freed_node->next;
+        free(freed_node);
+    }
+
+    return list;
+}
+
+boolean contains(Linked_List* list, struct t2fs_record registro_){
+    Linked_List* aux = list;
+    while (aux!=NULL){
+        if(strcmp(aux->registro.name, registro_.name) == 0){
+            return true;
+        }
+        aux = aux->next;
+    }
+    return false;
+}
 
 
 /// VARIAVEIS GLOBAIS
