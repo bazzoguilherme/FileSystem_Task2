@@ -25,10 +25,17 @@ typedef struct linked_list {
 } Linked_List;
 
 /// Funcoes Linked-List
+
+/*-----------------------------------------------------------------------------
+Inicialização de lista encadeada
+-----------------------------------------------------------------------------*/
 Linked_List* create_linked_list(){
     return NULL;
 }
 
+/*-----------------------------------------------------------------------------
+Insercao de elemento ao final da lista encadeada
+-----------------------------------------------------------------------------*/
 Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_) {
     Linked_List* new_node = (Linked_List*)malloc(sizeof(Linked_List));
     new_node->registro = registro_;
@@ -47,6 +54,27 @@ Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_) {
     return list;
 }
 
+/*-----------------------------------------------------------------------------
+Coletade elemento da lista - int indica se ocorreu certo
+    0 - okay
+   -1 - erro
+-----------------------------------------------------------------------------*/
+int get_element(Linked_List* list, char* nome_registro_, struct t2fs_record* registro){
+    Linked_List* aux = list;
+    while (aux!=NULL){
+        if(strcmp(aux->registro.name, nome_registro_) == 0){
+            registro = &aux->registro;
+            return 0;
+        }
+        aux = aux->next;
+    }
+
+    return -1;
+}
+
+/*-----------------------------------------------------------------------------
+Deleta um elemento da lista encadeada
+-----------------------------------------------------------------------------*/
 Linked_List* delete_element(Linked_List* list, char* nome_registro_){
     Linked_List* aux = NULL;
     Linked_List* freed_node = list;
@@ -73,6 +101,9 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_){
     return list;
 }
 
+/*-----------------------------------------------------------------------------
+Verificacao se existe um dado elemento (nome) no diretorio
+-----------------------------------------------------------------------------*/
 boolean contains(Linked_List* list, char* nome_registro_){
     Linked_List* aux = list;
     while (aux!=NULL){
