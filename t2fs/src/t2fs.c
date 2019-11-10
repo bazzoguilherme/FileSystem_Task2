@@ -170,6 +170,30 @@ boolean open_files_contem_arquivo(char* filename){
 	return false;
 }
 
+/*-----------------------------------------------------------------------------
+Função:	Verifica se tem um bloco livre e, caso sim, limpa-o e o marca no bitmap de blocos
+como ocupado. Retorno: -1 caso erro, 0 caso nao houver um bloco livre, ou o indice do bloco
+alocado.
+-----------------------------------------------------------------------------*/
+int aloca_bloco(){
+    int bloco;
+    int i;
+    if((bloco = searchBitmap2(BITMAP_DADOS, 0)) <= 0) { // Se retorno da funcao for negativo, deu erro
+        return bloco;
+    }
+
+    int setor_inicio = bloco * superbloco_montado.blockSize; // Setor de inicio do bloco
+
+    // Limpa bloco
+    unsigned char buffer[TAM_SETOR] = {0};
+    for(i=0; i<superbloco_montado.blockSize; i++){
+        write_sector(setor_inicio + i, buffer);
+    }
+
+    return bloco;
+}
+
+
 /// FUNCOES DA BIBLIOTECA
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
@@ -271,12 +295,17 @@ int format2(int partition, int sectors_per_block) {
         }
 	}
 
+	/// Inicializacao do bloco de dados do diretorio raiz
+    int bloco_raiz = aloca_bloco();
+    if(bloco_raiz <= 0){ // Se erro ou se nao ha um bloco livre, retorna erro
+        return -1;
+    }
 
-	/// Inicialização do i-node do diretorio raiz (i-node 0)
+	/// Inicializacao do i-node do diretorio raiz (i-node 0)
 	struct t2fs_inode inode_raiz;
-    inode_raiz.blocksFileSize = 0;
+    inode_raiz.blocksFileSize = 1;
 	inode_raiz.bytesFileSize = 0;
-	inode_raiz.dataPtr[0] = -1;
+	inode_raiz.dataPtr[0] = bloco_raiz;
 	inode_raiz.dataPtr[1] = -1;
 	inode_raiz.singleIndPtr = -1;
 	inode_raiz.doubleIndPtr = -1;
@@ -396,9 +425,9 @@ FILE2 create2 (char *filename) {
 
 
     // Selecao de um bloco de dados para o arquivo
-    int indice_bloco_dados;
-    if((indice_bloco_dados = searchBitmap2(BITMAP_DADOS, 0)) <= 0){ // Se retorno da funcao for negativo, deu erro
-            return -1;                                              // Se for 0, nao ha blocos livres
+    int indice_bloco_dados = aloca_bloco();
+    if(indice_bloco_dados <= 0){    // Se retorno da funcao for negativo, deu erro
+            return -1;              // Se for 0, nao ha blocos livres
     }
 
     // Selecao de um i-node para o arquivo
