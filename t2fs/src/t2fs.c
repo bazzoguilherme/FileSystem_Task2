@@ -29,6 +29,7 @@ struct t2fs_superbloco superbloco_montado; // Variavel que guarda as informacoes
 boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
 FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
 Linked_List* arquivos_diretorio = NULL; // Lista de registros do diretorio
+int base = 0;   // Endereco de inicio da particao montada
 
 
 /// FUNCOES AUXILIARES
@@ -187,7 +188,7 @@ int aloca_bloco(){
     // Limpa bloco
     unsigned char buffer[TAM_SETOR] = {0};
     for(i=0; i<superbloco_montado.blockSize; i++){
-        write_sector(setor_inicio + i, buffer);
+        write_sector(base + setor_inicio + i, buffer);
     }
 
     return bloco;
@@ -313,7 +314,8 @@ int format2(int partition, int sectors_per_block) {
 
 	// Bloco de inicio da area de inodes
 	int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
-    if(write_sector(inicio_area_inodes, (unsigned char *)&inode_raiz)){
+	int setor_inicio_area_inodes = inicio_area_inodes * TAM_SETOR;
+    if(write_sector(setor_inicio + setor_inicio_area_inodes, (unsigned char *)&inode_raiz)){
         return -1;
 	}
 
@@ -361,6 +363,7 @@ int mount(int partition) {
 	}
 
     tem_particao_montada = true;
+    base = setor_inicio;
 
     for(i=0; i<MAX_OPEN_FILE; i++){ // Inicializa/Limpa a tabela de arquivos abertos
         open_files[i].current_pointer = -1;
@@ -455,11 +458,11 @@ FILE2 create2 (char *filename) {
 	int end_novo_inode = indice_inode % inodes_por_setor;
 
 	unsigned char buffer[TAM_SETOR];
-	if(read_sector(setor_novo_inode, buffer)){
+	if(read_sector(base + setor_novo_inode, buffer)){
         return -1;
 	}
 	memcpy(&buffer[end_novo_inode], &new_inode, sizeof(struct t2fs_inode));
-	if(write_sector(setor_novo_inode, buffer)){
+	if(write_sector(base + setor_novo_inode, buffer)){
         return -1;
 	}
 
@@ -512,7 +515,7 @@ int delete2 (char *filename) {
 	int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
 	int end_inode = indice_inode % inodes_por_setor;
 
-	if(read_sector(setor_inode, buffer)){
+	if(read_sector(base + setor_inode, buffer)){
         return -1;
 	}
 	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
@@ -537,7 +540,7 @@ int delete2 (char *filename) {
         i=0;
         // Para todo setor do bloco de ind simples
         while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos){
-            if(read_sector(setor_inicio_bloco+i, buffer)){ // Le o setor
+            if(read_sector(base + setor_inicio_bloco + i, buffer)){ // Le o setor
                 return -1;
             }
 
@@ -566,7 +569,7 @@ int delete2 (char *filename) {
         k=0;
         // Para todo setor no bloco de ind dupla
         while(k<superbloco_montado.blockSize && blocos_liberados!=qtd_blocos){
-            if(read_sector(setor_inicio_bloco_indD+k, buffer)){ // Le o setor
+            if(read_sector(base + setor_inicio_bloco_indD + k, buffer)){ // Le o setor
                 return -1;
             }
             l = 0;
@@ -579,7 +582,7 @@ int delete2 (char *filename) {
                 i=0;
                 // Para todo setor no bloco de ind simples
                 while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos){
-                    if(read_sector(setor_inicio_bloco+i, buffer2)){ // Le o setor
+                    if(read_sector(base + setor_inicio_bloco + i, buffer2)){ // Le o setor
                         return -1;
                     }
                     j=0;
