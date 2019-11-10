@@ -24,8 +24,16 @@ typedef struct linked_list {
     struct linked_list* next;
 } Linked_List;
 
-/// Funcoes Linked-List
+/// VARIAVEIS GLOBAIS
+struct t2fs_superbloco superbloco_montado; // Variavel que guarda as informacoes do superbloco da particao montada
+boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
+FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
+Linked_List* arquivos_diretorio = NULL; // Lista de arquivos do diretorio
 
+
+/// FUNCOES AUXILIARES
+
+/// Funcoes Linked-List
 /*-----------------------------------------------------------------------------
 Inicialização de lista encadeada
 -----------------------------------------------------------------------------*/
@@ -55,7 +63,7 @@ Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_) {
 }
 
 /*-----------------------------------------------------------------------------
-Coletade elemento da lista - int indica se ocorreu certo
+Coleta de elemento da lista - int indica se ocorreu certo
     0 - okay
    -1 - erro
 -----------------------------------------------------------------------------*/
@@ -115,14 +123,6 @@ boolean contains(Linked_List* list, char* nome_registro_){
     return false;
 }
 
-
-/// VARIAVEIS GLOBAIS
-struct t2fs_superbloco superbloco_montado; // Variavel que guarda as informacoes do superbloco da particao montada
-boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
-FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
-Linked_List* arquivos_diretorio = NULL; // Lista de arquivos do diretorio
-
-/// FUNCOES AUXILIARES
 /*-----------------------------------------------------------------------------
 Le do buffer, a partir do endereço especificado, a quantidade de bytes informada.
 Retorna um int com os valores do buffer, considerando que os dados estao em little-endian
