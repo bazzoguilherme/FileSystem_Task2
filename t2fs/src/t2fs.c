@@ -28,7 +28,7 @@ typedef struct linked_list {
 struct t2fs_superbloco superbloco_montado; // Variavel que guarda as informacoes do superbloco da particao montada
 boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
 FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
-Linked_List* arquivos_diretorio = NULL; // Lista de arquivos do diretorio
+Linked_List* arquivos_diretorio = NULL; // Lista de registros do diretorio
 
 
 /// FUNCOES AUXILIARES
@@ -405,14 +405,13 @@ FILE2 create2 (char *filename) {
         return -1;
     }
 
-    // TODO: procurar se há algum arquivo no disco com mesmo nome.
-        // Caso já existir, remove o conteúdo, assumindo tamanho de zero bytes.
-    if (contains(arquivos_diretorio, filename)){
-        if (delete2(filename) != 0){
+    // Procurar se há algum arquivo no disco com mesmo nome.
+    // Caso ja existir, remove o conteudo, assumindo tamanho de zero bytes. (Deleta o arquivo e continua a criacao)
+    if(contains(arquivos_diretorio, filename)){
+        if(delete2(filename) != 0){
             return -1;
         }
     }
-
 
 
     /// T2FS Record
@@ -472,7 +471,8 @@ FILE2 create2 (char *filename) {
         return -1;
     }
 
-    // TODO: Adiciona registro na lista de registros
+    // Adiciona registro na lista de registros
+    insert_element(arquivos_diretorio, created_file_record);
 
     return open2(filename);
 }
