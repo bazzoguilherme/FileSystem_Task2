@@ -493,11 +493,129 @@ int delete2 (char *filename) {
     if (!contains(arquivos_diretorio, filename)){ // Caso não haja o arquivo no diretorio, retorna erro
         return -1;
     }
-    arquivos_diretorio = delete_element(arquivos_diretorio, filename); // Deleta o arquivo da lista de arquivos do diretorio
 
-    // Seta bitmaps como desocupados (limpa blocos de dados)
+    struct t2fs_record registro;
+    if(get_element(arquivos_diretorio, filename, &registro)){
+        return -1;
+    }
 
-	return -1;
+    // DESALOCA BLOCOS DE DADOS E I-NODE
+    int i,j,k,l;
+    unsigned char buffer[TAM_SETOR];
+    unsigned char buffer2[TAM_SETOR];
+    int indice_inode = registro.inodeNumber;
+    struct t2fs_inode inode;
+
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+	int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+	int end_inode = indice_inode % inodes_por_setor;
+
+	if(read_sector(setor_inode, buffer)){
+        return -1;
+	}
+	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+
+    int qtd_blocos = inode.blocksFileSize;
+    int blocos_liberados = 0;
+
+    for(i=0; i<2; i++){  // Indica blocos apontados diretamente como livres
+        if(inode.dataPtr[i] != -1){
+            if(setBitmap2(BITMAP_DADOS, inode.dataPtr[i], 0)){
+                return -1;
+            }
+            blocos_liberados ++;
+        }
+    }
+
+    int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
+    if(blocos_liberados != qtd_blocos){ // APRESENTA PONTEIRO DE INDIRECAO SIMPLES
+        int indice_bloco_indice = inode.singleIndPtr;
+        int setor_inicio_bloco = indice_bloco_indice * superbloco_montado.blockSize; //Localizacao do bloco de ind simples
+
+        i=0;
+        // Para todo setor do bloco de ind simples
+        while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos){
+            if(read_sector(setor_inicio_bloco+i, buffer)){ // Le o setor
+                return -1;
+            }
+
+            j=0;
+            // Para todo ponteiro (para um bloco de dados) nesse setor
+            while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos){
+                DWORD ponteiro;
+                memcpy(&ponteiro, &buffer[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+                if(setBitmap2(BITMAP_DADOS, ponteiro, 0)){ // Libera o bloco de dados
+                    return -1;
+                }
+                blocos_liberados++;
+                j++;
+            }
+            i++;
+        }
+        if(setBitmap2(BITMAP_DADOS, indice_bloco_indice, 0)){ // Libera o bloco de ind simples
+            return -1;
+        }
+    }
+
+    if(blocos_liberados != qtd_blocos) { // APRESENTA BLOCOS DE INDIRECAO DUPLA
+        int bloco_indD = inode.doubleIndPtr;
+        int setor_inicio_bloco_indD = bloco_indD * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
+
+        k=0;
+        // Para todo setor no bloco de ind dupla
+        while(k<superbloco_montado.blockSize && blocos_liberados!=qtd_blocos){
+            if(read_sector(setor_inicio_bloco_indD+k, buffer)){ // Le o setor
+                return -1;
+            }
+            l = 0;
+            // Para todo ponteiro (que aponta para um bloco de ind simples) nesse setor
+            while(i<qtd_ponteiros_por_setor && blocos_liberados!=qtd_blocos){
+                DWORD pt1;
+                memcpy(&pt1, &buffer[sizeof(DWORD)*i], sizeof(DWORD)); // Le o ponteiro
+                int setor_inicio_bloco = pt1 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
+
+                i=0;
+                // Para todo setor no bloco de ind simples
+                while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos){
+                    if(read_sector(setor_inicio_bloco+i, buffer2)){ // Le o setor
+                        return -1;
+                    }
+                    j=0;
+                    // Para todo ponteiro (para um bloco de dados) nesse setor
+                    while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos){
+                        DWORD pt2;
+                        memcpy(&pt2, &buffer2[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+                        if(setBitmap2(BITMAP_DADOS, pt2, 0)){ // Libera o bloco de dados
+                            return -1;
+                        }
+                        blocos_liberados++;
+                        j++;
+                    }
+                    i++;
+                }
+                if(setBitmap2(BITMAP_DADOS, pt1, 0)){ // Libera o bloco de ind simples
+                    return -1;
+                }
+                l++;
+            }
+            k++;
+        }
+        if(setBitmap2(BITMAP_DADOS, bloco_indD, 0)){ // Libera o bloco de ind dupla
+            return -1;
+        }
+    }
+
+    // Libera i-node
+    if(setBitmap2(BITMAP_INODE, indice_inode, 0)){
+        return -1;
+    }
+
+    // Deleta o arquivo da lista de arquivos do diretorio
+    arquivos_diretorio = delete_element(arquivos_diretorio, filename);
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
