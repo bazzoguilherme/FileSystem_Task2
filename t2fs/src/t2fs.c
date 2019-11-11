@@ -630,8 +630,10 @@ FILE2 open2 (char *filename) {
         return -1;
     }
 
-    // TODO - procura arquivo no disco
-        // - Le arquivo do disco
+    // Verifica se o arquivo existe no diretorio
+    if(!contains(arquivos_diretorio, filename)){
+        return -1;
+    }
 
     // Procura posicao para inserir arquivo
     int pos_insercao_open_file = 0;
