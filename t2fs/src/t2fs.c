@@ -493,6 +493,10 @@ int delete2 (char *filename) {
         return -1;
     }
 
+    if(opendir2()){
+        return -1;
+    }
+
     if (!contains(arquivos_diretorio, filename)){ // Caso não haja o arquivo no diretorio, retorna erro
         return -1;
     }
@@ -617,6 +621,10 @@ int delete2 (char *filename) {
 
     // Deleta o arquivo da lista de arquivos do diretorio
     arquivos_diretorio = delete_element(arquivos_diretorio, filename);
+
+    if(closedir2()){
+        return -1;
+    }
 
 	return 0;
 }
@@ -743,6 +751,82 @@ int sln2 (char *linkname, char *filename) {
 	if(!tem_particao_montada){
         return -1;
     }
+
+    opendir2();
+
+    if(!contains(arquivos_diretorio, filename)){
+        return -1;
+    }
+
+    // Aloca um bloco de dados que vai conter o nome do arquivo referenciado
+    int indice_bloco = aloca_bloco();
+    if(indice_bloco <= 0){
+        return -1;
+    }
+
+    unsigned char buffer[TAM_SETOR];
+    memcpy(buffer, filename, sizeof(filename));
+
+    // Escreve o bloco de dados no disco
+    int setor_inicio_bloco = indice_bloco * superbloco_montado.blockSize;
+    if(write_sector(base + setor_inicio_bloco, buffer)){
+        return -1;
+    }
+
+    /// T2FS Record
+    struct t2fs_record registro;
+    registro.TypeVal = TYPEVAL_LINK;
+    if (strlen(linkname) > 50){ // Caso o nome passado como parametro seja maior que o tamanho máximo
+        return -1;              //   do campo `name` para registro.
+    }
+    strcpy(registro.name, linkname);
+
+
+    // Selecao de um i-node para o arquivo
+    int indice_inode;
+    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0){ // Se retorno da funcao for negativo, deu erro
+            return -1;                                        // Se for 0, nao ha blocos livres
+    }
+
+    /// inicializacao i-node
+    struct t2fs_inode inode;
+	inode.blocksFileSize = 1;
+	inode.bytesFileSize = sizeof(filename);
+	inode.dataPtr[0] = indice_bloco;
+	inode.dataPtr[1] = -1;
+	inode.singleIndPtr = -1;
+	inode.doubleIndPtr = -1;
+	inode.RefCounter = 1;
+
+	registro.inodeNumber = indice_inode;
+
+	/// Escrita do i-node no disco
+	int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+	int setor_novo_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+	int end_novo_inode = indice_inode % inodes_por_setor;
+
+	if(read_sector(base + setor_novo_inode, buffer)){
+        return -1;
+	}
+	memcpy(&buffer[end_novo_inode], &inode, sizeof(struct t2fs_inode));
+	if(write_sector(base + setor_novo_inode, buffer)){
+        return -1;
+	}
+
+    if(setBitmap2(BITMAP_INODE, indice_inode, 1)){
+        return -1;
+    }
+    if(setBitmap2(BITMAP_DADOS, indice_bloco, 1)){
+        setBitmap2(BITMAP_INODE, indice_inode, 0);
+        return -1;
+    }
+
+    // Adiciona registro na lista de registros
+    insert_element(arquivos_diretorio, registro);
+
+    closedir2();
 	return -1;
 }
 
