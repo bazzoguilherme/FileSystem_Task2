@@ -702,6 +702,55 @@ int write2 (FILE2 handle, char *buffer, int size) {
 	return -1;
 }
 
+
+int carregaRegistrosDataPtr(DWORD blockNumber){
+	unsigned char buffer[TAM_SETOR] = {0};
+	int records_por_setor = TAM_SETOR/ sizeof(struct t2fs_record);
+	int i, j, c;
+	struct t2fs_record registro;
+	DIRENT2 entradaDir;
+
+	for(i = 0; i < superBlock_montado.blockSize; i++){ // Para todos os blocos do setor
+		int sector = blockNumber*superBlock_montado.blockSize + i;
+		read_sector(sector, buffer);
+		for(j = 0; j < records_por_setor; j++){  // Para todos registros do setor
+		    memcpy(&registro, buffer + j * sizeof(struct t2fs_record), sizeof(struct t2fs_record));
+            if(regitro.TypeVal != 0x00){
+                memcpy(entradaDir.name, registro.name, 51);
+                entradaDir.fileType = 0x01;
+
+                unsigned char buff[TAM_SETOR] = {0};
+                int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+                int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+                int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+                int setor_inode = setor_inicio_area_inodes + (registro.inodeNumber / inodes_por_setor);
+                int end_inode = registro.inodeNumber % inodes_por_setor;
+
+                if(read_sector(base + setor_inode, buff)){
+                    return -1;
+                }
+
+                struct t2fs_inode inode;
+                memcpy(&inode, &buff[end_inode], sizeof(struct t2fs_inode));
+
+                entradaDir.fileSize = inode.bytesFileSize;
+            }
+            arquivos_diretorio = insert_element(arquivos_diretorio, registro);
+		}
+	}
+	return 0;
+}
+
+
+int carregaRegistrosSingleIndPtr(DWORD blockNumber){
+    // Chama funcao para carregar diretamente
+}
+
+
+int carregaRegistrosDoubleIndPtr(DWORD blockNumber){
+    // Chama funcao de indirecao simples
+}
+
 /*-----------------------------------------------------------------------------
 Função:	Função que abre um diretório existente no disco.
 -----------------------------------------------------------------------------*/
@@ -710,6 +759,34 @@ int opendir2 (void) {
 	if(!tem_particao_montada){
         return -1;
     }
+
+    arquivos_diretorio = create_linked_list(); // Inicializa lista de arquivos do diretorio
+
+    unsigned char buffer[TAM_SETOR];
+    struct t2fs_inode inode;
+
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+	//int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+	int setor_inode = setor_inicio_area_inodes;
+	int end_inode = 0;  // Diretorio raiz esta associado ao inode 0
+
+	if(read_sector(base + setor_inode, buffer)){
+        return -1;
+	}
+	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+
+    //int qtd_blocos = inode.blocksFileSize;
+
+    for(i=0; i<2; i++){  // Indica blocos apontados diretamente como livres
+        if(inode.dataPtr[i] != -1){
+            carregaRegistrosDataPtr(inode.dataPtr[i]);
+        }
+    }
+    if (inode.singleIndPtr != -1){
+        carregaRegistrosSingleIndPtr();
+    }
+
 	return -1;
 }
 
