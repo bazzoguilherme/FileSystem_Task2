@@ -475,7 +475,7 @@ FILE2 create2 (char *filename) {
     }
 
     // Adiciona registro na lista de registros
-    insert_element(arquivos_diretorio, created_file_record);
+    arquivos_diretorio = insert_element(arquivos_diretorio, created_file_record);
 
     return open2(filename);
 }
@@ -501,6 +501,7 @@ int delete2 (char *filename) {
         return -1;
     }
 
+
     struct t2fs_record registro;
     if(get_element(arquivos_diretorio, filename, &registro)){
         return -1;
@@ -523,6 +524,18 @@ int delete2 (char *filename) {
         return -1;
 	}
 	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+
+	// Se houver hardlinks, apenas decrementa o contator e deleta o registro
+	if(inode.RefCounter > 1){
+        if(closedir2()){ // Fecha o diretorio
+            return -1;
+        }
+
+        inode.RefCounter--;
+        arquivos_diretorio = delete_element(arquivos_diretorio, filename);
+
+        return 0;
+	}
 
     int qtd_blocos = inode.blocksFileSize;
     int blocos_liberados = 0;
@@ -885,7 +898,7 @@ int sln2 (char *linkname, char *filename) {
     }
 
     // Adiciona registro na lista de registros
-    insert_element(arquivos_diretorio, registro);
+    arquivos_diretorio = insert_element(arquivos_diretorio, registro);
 
     if(closedir2()){
         return -1;
@@ -948,13 +961,13 @@ int hln2(char *linkname, char *filename) {
 	// Incrementa contador de referencia. Inode do hardlink eh o mesmo que o inode do arquivo referenciado
 	inode.RefCounter++;
 	registro_hardlink.inodeNumber = indice_inode;
-	insert_element(arquivos_diretorio, registro_hardlink);
+	arquivos_diretorio = insert_element(arquivos_diretorio, registro_hardlink);
 
     if(closedir2()){
        return -1;
     }
 
-	return -1;
+	return 0;
 }
 
 
