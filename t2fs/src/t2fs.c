@@ -29,6 +29,7 @@ struct t2fs_superbloco superbloco_montado; // Variavel que guarda as informacoes
 boolean tem_particao_montada = false; // Indica se tem alguma particao ja montada
 FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
 Linked_List* arquivos_diretorio = NULL; // Lista de registros do diretorio
+Linked_List* current_dentry = NULL;
 int base = 0;   // Endereco de inicio da particao montada
 
 
@@ -703,52 +704,100 @@ int write2 (FILE2 handle, char *buffer, int size) {
 }
 
 
-int carregaRegistrosDataPtr(DWORD blockNumber){
+void carregaRegistrosDataPtr(DWORD blockNumber){
 	unsigned char buffer[TAM_SETOR] = {0};
 	int records_por_setor = TAM_SETOR/ sizeof(struct t2fs_record);
-	int i, j, c;
+	int i, j;
 	struct t2fs_record registro;
-	DIRENT2 entradaDir;
 
-	for(i = 0; i < superBlock_montado.blockSize; i++){ // Para todos os blocos do setor
-		int sector = blockNumber*superBlock_montado.blockSize + i;
-		read_sector(sector, buffer);
-		for(j = 0; j < records_por_setor; j++){  // Para todos registros do setor
+	for(i = 0; i < superbloco_montado.blockSize; i++){
+		int sector = blockNumber*superbloco_montado.blockSize + i;
+		read_sector(base + sector, buffer);
+		for(j = 0; j < records_por_setor; j++){
 		    memcpy(&registro, buffer + j * sizeof(struct t2fs_record), sizeof(struct t2fs_record));
-            if(regitro.TypeVal != 0x00){
-                memcpy(entradaDir.name, registro.name, 51);
-                entradaDir.fileType = 0x01;
-
-                unsigned char buff[TAM_SETOR] = {0};
-                int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-                int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-                int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
-                int setor_inode = setor_inicio_area_inodes + (registro.inodeNumber / inodes_por_setor);
-                int end_inode = registro.inodeNumber % inodes_por_setor;
-
-                if(read_sector(base + setor_inode, buff)){
-                    return -1;
-                }
-
-                struct t2fs_inode inode;
-                memcpy(&inode, &buff[end_inode], sizeof(struct t2fs_inode));
-
-                entradaDir.fileSize = inode.bytesFileSize;
+            if(registro.TypeVal != 0x00){
+                arquivos_diretorio = insert_element(arquivos_diretorio, registro); // Adiciona registro em lista de arquivos abertos
             }
-            arquivos_diretorio = insert_element(arquivos_diretorio, registro);
 		}
 	}
-	return 0;
 }
 
 
-int carregaRegistrosSingleIndPtr(DWORD blockNumber){
-    // Chama funcao para carregar diretamente
+void carregaRegistrosSingleIndPtr(DWORD blockNumber){
+    int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
+    DWORD bloco_dataPtrDireto; // Bloco que contera' os ponteiros diretos obtidos da indirecao simples
+
+    unsigned char buffer[TAM_SETOR] = {0}; // Buffer para leitura
+
+    boolean controle_fluxo = true; // controle do fluxo de leitura dos blocos
+    int ptr_setor = 0; // utilizado para leitura dos setores
+    int i_bloco = 0; // utilizado para leitura coletar os dados a partir do setor lido
+
+    while (controle_fluxo) {
+        int setor = blockNumber * superbloco_montado.blockSize + ptr_setor; // construcao do setor para leitura
+        read_sector(base + setor, buffer); // le do setor (arrumando valor com base)
+
+        do {
+            memcpy(&bloco_dataPtrDireto, buffer + i_bloco * sizeof(DWORD), sizeof(DWORD)); // coleta bloco do setor e insere em variavel de bloco direto
+            i_bloco++;
+
+            if (bloco_dataPtrDireto != -1){ // Caso o valor nao seja invalido, carrega registros a partir dele
+                carregaRegistrosDataPtr(bloco_dataPtrDireto);
+            }
+
+        } while(bloco_dataPtrDireto != -1 && i_bloco < qtd_ponteiros_por_setor);
+                // Caso passe por blocos nao mais validos ou passa dos blocos validos, sai do laço
+
+        if (bloco_dataPtrDireto == -1){ // se blocos deixaram de ser validos, encerra laço
+            controle_fluxo = false;
+        }
+
+        ptr_setor++;
+        if (ptr_setor >= superbloco_montado.blockSize){ // se passou dos setores considerando o tamanho do bloco, encerra laço
+            controle_fluxo = false;
+        }
+
+        i_bloco = 0;
+    }
 }
 
 
-int carregaRegistrosDoubleIndPtr(DWORD blockNumber){
-    // Chama funcao de indirecao simples
+void carregaRegistrosDoubleIndPtr(DWORD blockNumber){
+    int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
+    DWORD bloco_dataPtrDireto; // Bloco que contera' os ponteiros de indirecao simples
+
+    unsigned char buffer[TAM_SETOR] = {0}; // Buffer para leitura
+
+    boolean controle_fluxo = true; // controle do fluxo de leitura dos blocos
+    int ptr_setor = 0; // utilizado para leitura dos setores
+    int i_bloco = 0; // utilizado para leitura coletar os dados a partir do setor lido
+
+    while (controle_fluxo) {
+        int setor = blockNumber * superbloco_montado.blockSize + ptr_setor; // construcao do setor para leitura
+        read_sector(base + setor, buffer); // le do setor (arrumando valor com base)
+
+        do {
+            memcpy(&bloco_dataPtrDireto, buffer + i_bloco * sizeof(DWORD), sizeof(DWORD)); // coleta bloco do setor e insere em variavel de bloco de indirecao simples
+            i_bloco++;
+
+            if (bloco_dataPtrDireto != -1){ // Caso o valor nao seja invalido, carrega registros a partir dele
+                carregaRegistrosDataPtr(bloco_dataPtrDireto);
+            }
+
+        } while(bloco_dataPtrDireto != -1 && i_bloco < qtd_ponteiros_por_setor);
+                // Caso passe por blocos nao mais validos ou passa dos blocos validos, sai do laço
+
+        if (bloco_dataPtrDireto == -1){ // se blocos deixaram de ser validos, encerra laço
+            controle_fluxo = false;
+        }
+
+        ptr_setor++;
+        if (ptr_setor >= superbloco_montado.blockSize){ // se passou dos setores considerando o tamanho do bloco, encerra laço
+            controle_fluxo = false;
+        }
+
+        i_bloco = 0;
+    }
 }
 
 /*-----------------------------------------------------------------------------
@@ -776,16 +825,21 @@ int opendir2 (void) {
 	}
 	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
 
-    //int qtd_blocos = inode.blocksFileSize;
 
+    int i = 0;
     for(i=0; i<2; i++){  // Indica blocos apontados diretamente como livres
         if(inode.dataPtr[i] != -1){
             carregaRegistrosDataPtr(inode.dataPtr[i]);
         }
     }
     if (inode.singleIndPtr != -1){
-        carregaRegistrosSingleIndPtr();
+        carregaRegistrosSingleIndPtr(inode.singleIndPtr);
     }
+    if (inode.doubleIndPtr != -1){
+        carregaRegistrosDoubleIndPtr(inode.doubleIndPtr);
+    }
+
+    current_dentry = arquivos_diretorio;
 
 	return -1;
 }
@@ -798,7 +852,37 @@ int readdir2 (DIRENT2 *dentry) {
 	if(!tem_particao_montada){
         return -1;
     }
-	return -1;
+
+    if(current_dentry == NULL){ // Caso o current_dentry seja invalido (lista vazia ou no final da mesma)
+        return -1;
+    }
+
+    struct t2fs_record registro = current_dentry->registro;
+
+    DIRENT2 entradaDir;
+
+    memcpy(entradaDir.name, registro.name, 51);
+    entradaDir.fileType = 0x01;
+
+    // Procura por inode para adicionar valor de tamanho em dentry
+    unsigned char buff[TAM_SETOR] = {0};
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+    int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+    int setor_inode = setor_inicio_area_inodes + (registro.inodeNumber / inodes_por_setor);
+    int end_inode = registro.inodeNumber % inodes_por_setor;
+
+    read_sector(base + setor_inode, buff);
+
+    struct t2fs_inode inode;
+    memcpy(&inode, &buff[end_inode], sizeof(struct t2fs_inode));
+
+    entradaDir.fileSize = inode.bytesFileSize;
+
+    *dentry = entradaDir;
+    current_dentry = current_dentry->next;
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
