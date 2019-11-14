@@ -638,8 +638,13 @@ FILE2 open2 (char *filename) {
         return -1;
     }
 
-    // Verifica se o arquivo existe no diretorio
-    if(!contains(arquivos_diretorio, filename)){
+    if(opendir2()){
+        return -1;
+    }
+
+    // Pega o registro do arquivo. Se o arquivo nao existe no diretorio, retorna -1
+    struct t2fs_record registro;
+    if(get_element(arquivos_diretorio, filename, &registro)){
         return -1;
     }
 
@@ -654,10 +659,54 @@ FILE2 open2 (char *filename) {
         return -1;                      // Isso significa que não há espaço disponível para abrir arquivo
     }
 
+
+    // Verifica se arquivo é um soft link
+    char nome_arq_referenciado[MAX_FILE_NAME_SIZE];
+    if(registro.TypeVal == TYPEVAL_LINK){
+
+        unsigned char buffer[TAM_SETOR];
+
+        // I-node do link
+        int indice_inode = registro.inodeNumber;
+
+        // Leitura do i-node no disco
+        int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+        int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+        int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+        int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+        int end_inode = indice_inode % inodes_por_setor;
+
+        if(read_sector(base + setor_inode, buffer)){
+            return -1;
+        }
+
+        struct t2fs_inode inode;
+        memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+
+        // Bloco contendo o nome do arquivo referenciado
+        int indice_bloco = inode.dataPtr[0];
+        int setor_bloco = indice_bloco * superbloco_montado.blockSize;
+        if(read_sector(base + setor_bloco, buffer)){
+            return -1;
+        }
+
+        // Leitura do nome do arquivo referenciado
+        memcpy(nome_arq_referenciado, buffer, MAX_FILE_NAME_SIZE);
+
+        if(!contains(arquivos_diretorio, nome_arq_referenciado)){
+            return -1; // Arquivo referenciado inexistente
+        }
+    }
+
     /// File
     FILE_T2FS new_open_file;
     new_open_file.current_pointer = 0;
-    strcpy(new_open_file.filename, filename);
+    if(registro.TypeVal == TYPEVAL_LINK){
+        strcpy(new_open_file.filename, nome_arq_referenciado);
+    }
+    else{
+        strcpy(new_open_file.filename, filename);
+    }
 
     open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
 
