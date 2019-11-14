@@ -698,13 +698,17 @@ FILE2 open2 (char *filename) {
         }
     }
 
+    if(closedir2()){
+        return -1;
+    }
+
     /// File
     FILE_T2FS new_open_file;
     new_open_file.current_pointer = 0;
     if(registro.TypeVal == TYPEVAL_LINK){
         strcpy(new_open_file.filename, nome_arq_referenciado);
     }
-    else{
+    else{ // Arquivo regular
         strcpy(new_open_file.filename, filename);
     }
 
@@ -801,8 +805,16 @@ int sln2 (char *linkname, char *filename) {
         return -1;
     }
 
-    opendir2();
+    if(opendir2()){
+        return -1;
+    }
 
+    // Verifica se ja nao existe um arquivo com mesmo nome que o link
+    if(contains(arquivos_diretorio, linkname)){
+        return -1;
+    }
+
+    // Verifica se o arquivo referenciado existe
     if(!contains(arquivos_diretorio, filename)){
         return -1;
     }
@@ -875,8 +887,10 @@ int sln2 (char *linkname, char *filename) {
     // Adiciona registro na lista de registros
     insert_element(arquivos_diretorio, registro);
 
-    closedir2();
-	return -1;
+    if(closedir2()){
+        return -1;
+    }
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -887,6 +901,59 @@ int hln2(char *linkname, char *filename) {
 	if(!tem_particao_montada){
         return -1;
     }
+
+    if(opendir2()){
+        return -1;
+    }
+
+    // Verifica se ja nao existe um arquivo com mesmo nome que o link
+    if(contains(arquivos_diretorio, linkname)){
+        return -1;
+    }
+
+    // Verifica se o arquivo referenciado existe
+    if(!contains(arquivos_diretorio, filename)){
+        return -1;
+    }
+
+    /// T2FS Record
+    struct t2fs_record registro_hardlink;
+    registro_hardlink.TypeVal = TYPEVAL_REGULAR; // Hard link eh um registro regular
+    if (strlen(linkname) > 50){ // Caso o nome passado como parametro seja maior que o tamanho máximo
+        return -1;              //   do campo `name` para registro.
+    }
+    strcpy(registro_hardlink.name, linkname);
+
+    // Identificacao do i-node do arquivo "original"
+    struct t2fs_record registro;
+    if(get_element(arquivos_diretorio, filename, &registro)){
+        return -1;
+    }
+    int indice_inode = registro.inodeNumber;
+    struct t2fs_inode inode;
+
+    // Leitura do i-node no disco
+	int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+	int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+	int end_inode = indice_inode % inodes_por_setor;
+
+	unsigned char buffer[TAM_SETOR];
+	if(read_sector(base + setor_inode, buffer)){
+        return -1;
+	}
+	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+
+	// Incrementa contador de referencia. Inode do hardlink eh o mesmo que o inode do arquivo referenciado
+	inode.RefCounter++;
+	registro_hardlink.inodeNumber = indice_inode;
+	insert_element(arquivos_diretorio, registro_hardlink);
+
+    if(closedir2()){
+       return -1;
+    }
+
 	return -1;
 }
 
