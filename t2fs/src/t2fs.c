@@ -30,6 +30,7 @@ boolean tem_particao_montada = false; // Indica se tem alguma particao ja montad
 FILE_T2FS open_files[MAX_OPEN_FILE] = {}; // Tabela de arquivos abertos (Maximo 10 por vez)
 Linked_List* arquivos_diretorio = NULL; // Lista de registros do diretorio
 Linked_List* current_dentry = NULL;
+boolean diretorio_aberto = false;
 int base = 0;   // Endereco de inicio da particao montada
 
 
@@ -809,6 +810,10 @@ int opendir2 (void) {
         return -1;
     }
 
+    if (diretorio_aberto){ // Caso diretorio ja esteja aberto, retorna erro
+        return -1;
+    }
+
     arquivos_diretorio = create_linked_list(); // Inicializa lista de arquivos do diretorio
 
     unsigned char buffer[TAM_SETOR];
@@ -841,6 +846,8 @@ int opendir2 (void) {
 
     current_dentry = arquivos_diretorio;
 
+    diretorio_aberto = true;
+
 	return -1;
 }
 
@@ -853,7 +860,7 @@ int readdir2 (DIRENT2 *dentry) {
         return -1;
     }
 
-    if(current_dentry == NULL){ // Caso o current_dentry seja invalido (lista vazia ou no final da mesma)
+    if(!diretorio_aberto){ // Caso diretorio nao esteja aberto, retorna erro
         return -1;
     }
 
@@ -893,6 +900,30 @@ int closedir2 (void) {
 	if(!tem_particao_montada){
         return -1;
     }
+
+    if (!diretorio_aberto){ // Caso diretorio nao esteja aberto, retorna erro
+        return -1;
+    }
+
+    Linked_List* aux = arquivos_diretorio;
+    while(aux != NULL){
+        aux = aux->next;
+        free(arquivos_diretorio);
+        arquivos_diretorio = aux;
+    }
+    arquivos_diretorio = NULL;
+    current_dentry = NULL;
+
+
+    /* // Indica arquivos abertos agora como fechados
+    int i;
+    for(i=0;i<MAX_OPEN_FILE;i++){
+        open_files[i].current_pointer = -1;
+    }
+    */
+
+    diretorio_aberto = false;
+
 	return -1;
 }
 
