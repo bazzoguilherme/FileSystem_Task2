@@ -905,16 +905,6 @@ int closedir2 (void) {
         return -1;
     }
 
-    Linked_List* aux = arquivos_diretorio;
-    while(aux != NULL){
-        aux = aux->next;
-        free(arquivos_diretorio);
-        arquivos_diretorio = aux;
-    }
-    arquivos_diretorio = NULL;
-    current_dentry = NULL;
-
-
     /* // Indica arquivos abertos agora como fechados
     int i;
     for(i=0;i<MAX_OPEN_FILE;i++){
@@ -926,6 +916,66 @@ int closedir2 (void) {
         Atualizar inode do diretorio
             - Atualizar tamanho do diretorio: soma dos tamanhos dos arquivos
     */
+    unsigned char buffer[TAM_SETOR] = {0};
+    unsigned char buffer_aux[TAM_SETOR] = {0};
+
+    // Carrega conteúdos do inode do dir
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+	int setor_inode = setor_inicio_area_inodes;
+	int end_inode = 0;  // Diretorio raiz esta associado ao inode 0
+
+	if(read_sector(base + setor_inode, buffer)){
+        return -1;
+	}
+	struct t2fs_inode inode;
+	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+
+    int soma_blocos = 0;
+    int soma_bytes = 0;
+    Linked_List* aux = arquivos_diretorio;
+    while(aux != NULL){
+        int inode_registro = aux->registro.inodeNumber;
+
+        // Carrega inode de arquivo do diretorio
+        int inicio_area_inodes_aux = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+        int setor_inicio_area_inodes_aux = inicio_area_inodes_aux * superbloco_montado.blockSize;
+        int inodes_por_setor_aux = TAM_SETOR / sizeof(struct t2fs_inode);
+        int setor_inode_aux = setor_inicio_area_inodes_aux + (inode_registro / inodes_por_setor_aux);
+        int end_inode_aux = inode_registro % inodes_por_setor_aux;
+
+        if(read_sector(base + setor_inode_aux, buffer_aux)){
+            return -1;
+        }
+        struct t2fs_inode inode_aux;
+        memcpy(&inode_aux, &buffer_aux[end_inode_aux], sizeof(struct t2fs_inode));
+
+        // Incrementa variaveis de tamanho do diretorio
+        soma_blocos += inode_aux.blocksFileSize;
+        soma_bytes  += inode_aux.bytesFileSize;
+
+        aux = aux->next;
+    }
+
+    inode.blocksFileSize = soma_blocos;
+    inode.bytesFileSize  = soma_bytes;
+
+    // Escreve as mudancas do inode do diretorio
+    memcpy(&buffer[end_inode], &inode, sizeof(struct t2fs_inode));
+    if (write_sector(base+setor_inode, buffer)){
+        return -1;
+    }
+
+
+    aux = arquivos_diretorio;
+    while(aux != NULL){
+        aux = aux->next;
+        free(arquivos_diretorio);
+        arquivos_diretorio = aux;
+    }
+    arquivos_diretorio = NULL;
+    current_dentry = NULL;
+
 
     diretorio_aberto = false;
 
