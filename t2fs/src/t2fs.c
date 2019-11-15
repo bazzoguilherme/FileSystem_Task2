@@ -922,6 +922,11 @@ int closedir2 (void) {
     }
     */
 
+    /*TODO
+        Atualizar inode do diretorio
+            - Atualizar tamanho do diretorio: soma dos tamanhos dos arquivos
+    */
+
     diretorio_aberto = false;
 
 	return -1;
