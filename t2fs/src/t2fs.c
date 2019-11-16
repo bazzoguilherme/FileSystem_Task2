@@ -705,7 +705,7 @@ int write2 (FILE2 handle, char *buffer, int size) {
 }
 
 
-void carregaRegistrosDataPtr(DWORD blockNumber){
+int carregaRegistrosDataPtr(DWORD blockNumber){
 	unsigned char buffer[TAM_SETOR] = {0};
 	int records_por_setor = TAM_SETOR/ sizeof(struct t2fs_record);
 	int i, j;
@@ -713,7 +713,9 @@ void carregaRegistrosDataPtr(DWORD blockNumber){
 
 	for(i = 0; i < superbloco_montado.blockSize; i++){
 		int sector = blockNumber*superbloco_montado.blockSize + i;
-		read_sector(base + sector, buffer);
+		if (read_sector(base + sector, buffer) == -1){
+            return -1;
+		}
 		for(j = 0; j < records_por_setor; j++){
 		    memcpy(&registro, buffer + j * sizeof(struct t2fs_record), sizeof(struct t2fs_record));
             if(registro.TypeVal != 0x00){
@@ -721,10 +723,11 @@ void carregaRegistrosDataPtr(DWORD blockNumber){
             }
 		}
 	}
+	return -1;
 }
 
 
-void carregaRegistrosSingleIndPtr(DWORD blockNumber){
+int carregaRegistrosSingleIndPtr(DWORD blockNumber){
     int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
     DWORD bloco_dataPtrDireto; // Bloco que contera' os ponteiros diretos obtidos da indirecao simples
 
@@ -736,14 +739,18 @@ void carregaRegistrosSingleIndPtr(DWORD blockNumber){
 
     while (controle_fluxo) {
         int setor = blockNumber * superbloco_montado.blockSize + ptr_setor; // construcao do setor para leitura
-        read_sector(base + setor, buffer); // le do setor (arrumando valor com base)
+        if (read_sector(base + setor, buffer) == -1){ // le do setor (arrumando valor com base)
+            return -1;
+        }
 
         do {
             memcpy(&bloco_dataPtrDireto, buffer + i_bloco * sizeof(DWORD), sizeof(DWORD)); // coleta bloco do setor e insere em variavel de bloco direto
             i_bloco++;
 
             if (bloco_dataPtrDireto != -1){ // Caso o valor nao seja invalido, carrega registros a partir dele
-                carregaRegistrosDataPtr(bloco_dataPtrDireto);
+                if (carregaRegistrosDataPtr(bloco_dataPtrDireto) == -1){
+                    return -1;
+                }
             }
 
         } while(bloco_dataPtrDireto != -1 && i_bloco < qtd_ponteiros_por_setor);
@@ -760,12 +767,13 @@ void carregaRegistrosSingleIndPtr(DWORD blockNumber){
 
         i_bloco = 0;
     }
+    return 0;
 }
 
 
-void carregaRegistrosDoubleIndPtr(DWORD blockNumber){
+int carregaRegistrosDoubleIndPtr(DWORD blockNumber){
     int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
-    DWORD bloco_dataPtrDireto; // Bloco que contera' os ponteiros de indirecao simples
+    DWORD bloco_dataPtrIndireto; // Bloco que contera' os ponteiros de indirecao simples
 
     unsigned char buffer[TAM_SETOR] = {0}; // Buffer para leitura
 
@@ -775,20 +783,24 @@ void carregaRegistrosDoubleIndPtr(DWORD blockNumber){
 
     while (controle_fluxo) {
         int setor = blockNumber * superbloco_montado.blockSize + ptr_setor; // construcao do setor para leitura
-        read_sector(base + setor, buffer); // le do setor (arrumando valor com base)
+        if (read_sector(base + setor, buffer) == -1){ // le do setor (arrumando valor com base)
+            return -1;
+        }
 
         do {
-            memcpy(&bloco_dataPtrDireto, buffer + i_bloco * sizeof(DWORD), sizeof(DWORD)); // coleta bloco do setor e insere em variavel de bloco de indirecao simples
+            memcpy(&bloco_dataPtrIndireto, buffer + i_bloco * sizeof(DWORD), sizeof(DWORD)); // coleta bloco do setor e insere em variavel de bloco de indirecao simples
             i_bloco++;
 
-            if (bloco_dataPtrDireto != -1){ // Caso o valor nao seja invalido, carrega registros a partir dele
-                carregaRegistrosDataPtr(bloco_dataPtrDireto);
+            if (bloco_dataPtrIndireto != -1){ // Caso o valor nao seja invalido, carrega registros a partir dele
+                if (carregaRegistrosSingleIndPtr(bloco_dataPtrIndireto) == -1){
+                    return -1;
+                }
             }
 
-        } while(bloco_dataPtrDireto != -1 && i_bloco < qtd_ponteiros_por_setor);
+        } while(bloco_dataPtrIndireto != -1 && i_bloco < qtd_ponteiros_por_setor);
                 // Caso passe por blocos nao mais validos ou passa dos blocos validos, sai do laço
 
-        if (bloco_dataPtrDireto == -1){ // se blocos deixaram de ser validos, encerra laço
+        if (bloco_dataPtrIndireto == -1){ // se blocos deixaram de ser validos, encerra laço
             controle_fluxo = false;
         }
 
@@ -799,6 +811,7 @@ void carregaRegistrosDoubleIndPtr(DWORD blockNumber){
 
         i_bloco = 0;
     }
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -834,21 +847,27 @@ int opendir2 (void) {
     int i = 0;
     for(i=0; i<2; i++){  // Indica blocos apontados diretamente como livres
         if(inode.dataPtr[i] != -1){
-            carregaRegistrosDataPtr(inode.dataPtr[i]);
+            if (carregaRegistrosDataPtr(inode.dataPtr[i]) == -1){
+                return -1;
+            }
         }
     }
     if (inode.singleIndPtr != -1){
-        carregaRegistrosSingleIndPtr(inode.singleIndPtr);
+        if (carregaRegistrosSingleIndPtr(inode.singleIndPtr) == -1){
+            return -1;
+        }
     }
     if (inode.doubleIndPtr != -1){
-        carregaRegistrosDoubleIndPtr(inode.doubleIndPtr);
+        if (carregaRegistrosDoubleIndPtr(inode.doubleIndPtr) == -1){
+            return -1;
+        }
     }
 
     current_dentry = arquivos_diretorio;
 
     diretorio_aberto = true;
 
-	return -1;
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
