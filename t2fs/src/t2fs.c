@@ -936,7 +936,6 @@ int closedir2 (void) {
             - Atualizar tamanho do diretorio: soma dos tamanhos dos arquivos
     */
     unsigned char buffer[TAM_SETOR] = {0};
-    unsigned char buffer_aux[TAM_SETOR] = {0};
 
     // Carrega conteúdos do inode do dir
     int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
@@ -950,34 +949,16 @@ int closedir2 (void) {
 	struct t2fs_inode inode;
 	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
 
-    int soma_blocos = 0;
-    int soma_bytes = 0;
+
     Linked_List* aux = arquivos_diretorio;
-    while(aux != NULL){
-        int inode_registro = aux->registro.inodeNumber;
-
-        // Carrega inode de arquivo do diretorio
-        int inicio_area_inodes_aux = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-        int setor_inicio_area_inodes_aux = inicio_area_inodes_aux * superbloco_montado.blockSize;
-        int inodes_por_setor_aux = TAM_SETOR / sizeof(struct t2fs_inode);
-        int setor_inode_aux = setor_inicio_area_inodes_aux + (inode_registro / inodes_por_setor_aux);
-        int end_inode_aux = inode_registro % inodes_por_setor_aux;
-
-        if(read_sector(base + setor_inode_aux, buffer_aux)){
-            return -1;
-        }
-        struct t2fs_inode inode_aux;
-        memcpy(&inode_aux, &buffer_aux[end_inode_aux], sizeof(struct t2fs_inode));
-
-        // Incrementa variaveis de tamanho do diretorio
-        soma_blocos += inode_aux.blocksFileSize;
-        soma_bytes  += inode_aux.bytesFileSize;
-
+    int qnt_registros = 0;
+    while (aux != NULL){
         aux = aux->next;
+        qnt_registros++;
     }
 
-    inode.blocksFileSize = soma_blocos;
-    inode.bytesFileSize  = soma_bytes;
+    inode.bytesFileSize  = qnt_registros * sizeof(struct t2fs_record);
+    inode.blocksFileSize = ceil(inode.bytesFileSize / superbloco_montado.blockSize);
 
     // Escreve as mudancas do inode do diretorio
     memcpy(&buffer[end_inode], &inode, sizeof(struct t2fs_inode));
@@ -985,7 +966,7 @@ int closedir2 (void) {
         return -1;
     }
 
-
+    // Limpa memória dos arquivos que estavam em lista de arquivos de diretorio
     aux = arquivos_diretorio;
     while(aux != NULL){
         aux = aux->next;
