@@ -888,7 +888,7 @@ int readdir2 (DIRENT2 *dentry) {
     DIRENT2 entradaDir;
 
     memcpy(entradaDir.name, registro.name, 51);
-    entradaDir.fileType = 0x01;
+    entradaDir.fileType = registro.TypeVal;
 
     // Procura por inode para adicionar valor de tamanho em dentry
     unsigned char buff[TAM_SETOR] = {0};
