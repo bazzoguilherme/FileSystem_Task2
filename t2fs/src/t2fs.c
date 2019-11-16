@@ -683,12 +683,127 @@ Função:	Função usada para realizar a leitura de uma certa quantidade
 -----------------------------------------------------------------------------*/
 int read2 (FILE2 handle, char *buffer, int size) {
 
-	if(!tem_particao_montada){
+    // Se particao nao foi montada, se a quantidade de bytes para leitura for negativa ou se
+    // o arquivo indicado por handle na open_files table tiver um current_pointer invalido,
+    // retorna erro.
+	if(!tem_particao_montada || size < 0 || open_files[handle].current_pointer < 0){
         return -1;
     }
 
-	return -1;
+    // Le registro do arquivo indicado por filename
+    struct t2fs_record registro;
+    int setores_por_bloco = superbloco_montado.blockSize;
+
+    if(get_element(arquivos_diretorio, open_files[handle].filename, &registro)){
+        return -1;
+    }
+
+    // Calcula o indice do inode do arquivo indicado por filename
+    int indice_inode = registro.inodeNumber;
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+	int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+	int end_inode = indice_inode % inodes_por_setor;
+
+    int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
+
+	// Le inode do arquivo indicado por filename
+    struct t2fs_inode inode;
+	unsigned char buffer_inode[TAM_SETOR];
+    unsigned char buffer_setor[TAM_SETOR];
+	if(read_sector(base + setor_inode, buffer_inode)){
+        return -1;
+	}
+	memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
+
+    unsigned int qtde_blocos_arquivo = inode.blocksFileSize;
+    unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize
+
+    if(inode.bytesFileSize - open_files[handle].current_pointer < size){
+        size = inode.bytesFileSize - open_files[handle];
+    }
+
+    // ind_byte: armazena o indice do byte atual para ser lido do setor (para qualquer um dos blocos apontados pelo inode)
+    // valor_byte: variavel para armazenar byte lido do setor
+    // bytes_read: total de bytes lidos do arquivo
+    unsigned int ind_byte = open_files[handle].current_pointer;
+    unsigned char valor_byte;
+    unsigned int bytes_read = 0;
+
+    //Faz a leitura dos dados do primeiro ponteiro direto do inode
+    if(open_files[handle].current_pointer < bytes_por_bloco){
+        if(inode.dataPtr[0] != -1){
+            // Calcula setor de inicio do bloco de dados do ponteiro direto
+            int indice_bloco_direto_a = inode.dataPtr[0];
+            int setor_inicio_direto_a = indice_bloco_direto_a * superbloco_montado.blockSize;
+
+            // Le o setor do disco para buffer_setor
+            if(read_sector(base + setor_inicio_direto_a, buffer_setor)){ // Le o setor
+                return -1;
+            }
+
+            // Percorre o setor gravando byte a byte no buffer enquanto:
+                // a) nao chegar ao final do setor
+                // b) nao ultrapassar o tamanho maximo do arquivo
+                // c) nao ultrapassar o request de bytes a serem lidos
+
+            while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < size){
+                memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
+                *(buffer + bytes_read) = valor_byte;
+                ind_byte++;
+                bytes_read++;
+                open_files[handle].current_pointer++;
+            }
+            ind_byte = 0; // Reseta indice do byte para entrar no proximo laco, caso se aplique
+        }
+    }else{
+        ind_byte -= bytes_por_bloco; // Caso nao entre no primeiro caso, subtrai tamanho do bloco em bytes da
+                                     // variavel de byte atual para preparar para proximo condicional
+    }
+
+    // Faz leitura do segundo bloco apontado por ponteiro direto do inode
+    if(open_files[handle].current_pointer < 2*bytes_por_bloco && bytes_read < size){
+        if(inode.dataPtr[1] != -1){
+            // Calcula setor de inicio do bloco de dados do ponteiro direto
+            int indice_bloco_direto_b = inode.dataPtr[1];
+            int setor_inicio_direto_b = indice_bloco_direto_b * superbloco_montado.blockSize;
+
+            // Le o setor do disco para buffer_setor
+            if(read_sector(base + setor_inicio_direto_b, buffer_setor)){ // Le o setor
+                return -1;
+            }
+
+            // Percorre o setor gravando byte a byte no buffer enquanto:
+                // a) nao chegar ao final do setor
+                // b) nao ultrapassar o tamanho maximo do arquivo
+                // c) nao ultrapassar o request de bytes a serem lidos
+
+            while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < size){
+                memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
+                *(buffer + bytes_read) = valor_byte;
+                ind_byte++;
+                bytes_read++;
+                open_files[handle].current_pointer++;
+            }
+            ind_byte = 0;
+        }
+    }else{
+        ind_byte -= bytes_por_bloco;
+    }
+
+    if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco)){
+        // Le dos blocos de indirecao simples e atualiza current_pointer
+    }
+    if(open_files[handle].current_pointer < ((bytes_por_bloco/sizeof(DWORD))**2)*bytes_por_bloco){
+        // Le dos blocos de indirecao dupla e atualiza current_pointer
+    }
+
+	return bytes_read;
 }
+
+DWORD recover_block_index()
+
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para realizar a escrita de uma certa quantidade
