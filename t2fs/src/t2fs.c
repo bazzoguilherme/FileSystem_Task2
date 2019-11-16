@@ -747,16 +747,16 @@ int carregaRegistrosSingleIndPtr(DWORD blockNumber){
             memcpy(&bloco_dataPtrDireto, buffer + i_bloco * sizeof(DWORD), sizeof(DWORD)); // coleta bloco do setor e insere em variavel de bloco direto
             i_bloco++;
 
-            if (bloco_dataPtrDireto != -1){ // Caso o valor nao seja invalido, carrega registros a partir dele
+            if (bloco_dataPtrDireto != 0){ // Caso o valor nao seja invalido, carrega registros a partir dele
                 if (carregaRegistrosDataPtr(bloco_dataPtrDireto) == -1){
                     return -1;
                 }
             }
 
-        } while(bloco_dataPtrDireto != -1 && i_bloco < qtd_ponteiros_por_setor);
+        } while(bloco_dataPtrDireto != 0 && i_bloco < qtd_ponteiros_por_setor);
                 // Caso passe por blocos nao mais validos ou passa dos blocos validos, sai do laço
 
-        if (bloco_dataPtrDireto == -1){ // se blocos deixaram de ser validos, encerra laço
+        if (bloco_dataPtrDireto == 0){ // se blocos deixaram de ser validos, encerra laço
             controle_fluxo = false;
         }
 
@@ -791,16 +791,16 @@ int carregaRegistrosDoubleIndPtr(DWORD blockNumber){
             memcpy(&bloco_dataPtrIndireto, buffer + i_bloco * sizeof(DWORD), sizeof(DWORD)); // coleta bloco do setor e insere em variavel de bloco de indirecao simples
             i_bloco++;
 
-            if (bloco_dataPtrIndireto != -1){ // Caso o valor nao seja invalido, carrega registros a partir dele
+            if (bloco_dataPtrIndireto != 0){ // Caso o valor nao seja invalido, carrega registros a partir dele
                 if (carregaRegistrosSingleIndPtr(bloco_dataPtrIndireto) == -1){
                     return -1;
                 }
             }
 
-        } while(bloco_dataPtrIndireto != -1 && i_bloco < qtd_ponteiros_por_setor);
+        } while(bloco_dataPtrIndireto != 0 && i_bloco < qtd_ponteiros_por_setor);
                 // Caso passe por blocos nao mais validos ou passa dos blocos validos, sai do laço
 
-        if (bloco_dataPtrIndireto == -1){ // se blocos deixaram de ser validos, encerra laço
+        if (bloco_dataPtrIndireto == 0){ // se blocos deixaram de ser validos, encerra laço
             controle_fluxo = false;
         }
 
