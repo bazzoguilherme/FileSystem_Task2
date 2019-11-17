@@ -804,32 +804,37 @@ int read2 (FILE2 handle, char *buffer, int size) {
     unsigned int ind_byte = open_files[handle].current_pointer;
     unsigned char valor_byte;
     unsigned int bytes_read = 0;
-
+    int ind_setor_dados, ind_byte_dados;
     //Faz a leitura dos dados do primeiro ponteiro direto do inode
     if(open_files[handle].current_pointer < bytes_por_bloco){
+
         if(inode.dataPtr[0] != -1){
             // Calcula setor de inicio do bloco de dados do ponteiro direto
             int indice_bloco_direto_a = inode.dataPtr[0];
             int setor_inicio_direto_a = indice_bloco_direto_a * superbloco_montado.blockSize;
 
-            // Le o setor do disco para buffer_setor
-            if(read_sector(base + setor_inicio_direto_a, buffer_setor)){ // Le o setor
-                return -1;
-            }
+            ind_setor_dados = floor(ind_byte/TAM_SETOR);
 
-            // Percorre o setor gravando byte a byte no buffer enquanto:
-                // a) nao chegar ao final do setor
-                // b) nao ultrapassar o tamanho maximo do arquivo
-                // c) nao ultrapassar o request de bytes a serem lidos
+            while(ind_setor_dados < superbloco_montado.blockSize && bytes_read < size && bytes_read < inode.bytesFileSize){
+                // Le o setor do disco para buffer_setor
+                if(read_sector(base + setor_inicio_direto_a + ind_setor_dados, buffer_setor)){ // Le o setor
+                    return -1;
+                }
+                ind_byte = ind_byte%TAM_SETOR;
+                // Percorre o setor gravando byte a byte no buffer enquanto:
+                    // a) nao chegar ao final do setor
+                    // b) nao ultrapassar o tamanho maximo do arquivo
+                    // c) nao ultrapassar o request de bytes a serem lidos
 
-            while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < size){
-                memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
-                *(buffer + bytes_read) = valor_byte;
-                ind_byte++;
-                bytes_read++;
-                open_files[handle].current_pointer++;
-            }
+                while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < size){
+                    memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
+                    *(buffer + bytes_read) = valor_byte;
+                    ind_byte++;
+                    bytes_read++;
+                    open_files[handle].current_pointer++;
+                }
             ind_byte = 0; // Reseta indice do byte para entrar no proximo laco, caso se aplique
+            }
         }
     }else{
         ind_byte -= bytes_por_bloco; // Caso nao entre no primeiro caso, subtrai tamanho do bloco em bytes da
@@ -843,6 +848,11 @@ int read2 (FILE2 handle, char *buffer, int size) {
             int indice_bloco_direto_b = inode.dataPtr[1];
             int setor_inicio_direto_b = indice_bloco_direto_b * superbloco_montado.blockSize;
 
+            /* ===========================
+            Calcular setor inicial do bloco direto 2
+            Ler cada setor
+               ===========================*/
+
             // Le o setor do disco para buffer_setor
             if(read_sector(base + setor_inicio_direto_b, buffer_setor)){ // Le o setor
                 return -1;
@@ -852,6 +862,10 @@ int read2 (FILE2 handle, char *buffer, int size) {
                 // a) nao chegar ao final do setor
                 // b) nao ultrapassar o tamanho maximo do arquivo
                 // c) nao ultrapassar o request de bytes a serem lidos
+
+            /* ===========================
+            Calcular byte inicial do setor de dados
+               ===========================*/
 
             while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < size){
                 memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
@@ -866,11 +880,171 @@ int read2 (FILE2 handle, char *buffer, int size) {
         ind_byte -= bytes_por_bloco;
     }
 
+    // Leitura de dados por INDIREÇÃO SIMPLES
+    unsigned char buffer_setor_indirecao[TAM_SETOR], buffer_setor_dados[TAM_SETOR];
+    unsigned int i, j, k;
+    unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
+    unsigned indice_bloco_dados, setor_inicio_bloco_dados;
+    DWORD ponteiro;
+
     if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco)){
-        // Le dos blocos de indirecao simples e atualiza current_pointer
+        indice_bloco_indirecao = inode.singleIndPtr;
+        setor_inicio_bloco_indirecao = indice_bloco_indirecao * superbloco_montado.blockSize; //Localizacao do bloco de ind simples
+
+        /* ===========================
+        Calcular setor inicial do bloco de indirecao simples
+           ===========================*/
+        i=0;
+        // Para CADA SETOR do bloco de ind simples, enquanto nao ultrapassar:
+            // - tamanho do arquivo
+            // - request de bytes a serem lidos
+        while(i<superbloco_montado.blockSize && bytes_read < size && bytes_read < inode.bytesFileSize){
+            // Le i-esimo setor de ponteiros para buffer
+            if(read_sector(base + setor_inicio_bloco_indirecao + i, buffer_setor_indirecao)){
+                return -1;
+            }
+
+            /* ===========================
+            Calcular ponteiro inicial do setor de indirecao simples
+               ===========================*/
+
+            j=0;
+            // Para todo ponteiro (para um bloco de dados) nesse setor
+            while(j < qtd_ponteiros_por_setor && bytes_read < size && bytes_read <inode.bytesFileSize){
+
+                memcpy(&ponteiro, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+
+                // Calcula localizacao do bloco de dados apontado pelo j-esimo ponteiro
+                indice_bloco_dados = ponteiro;
+                setor_inicio_bloco_dados = indice_bloco_dados * superbloco_montado.blockSize; //Localizacao do bloco de dados
+
+                /* ===========================
+                Calcular setor inicial do bloco de dados
+                   ===========================*/
+                k=0
+
+                while(k < superbloco_montado.blockSize && bytes_read < size && bytes_read < inode.bytesFileSize){
+                    //Le setor para o buffer de dados
+                    if(read_sector(base + setor_inicio_bloco_dados + k, buffer_setor_dados)){
+                        return -1;
+                    }
+
+                    // Percorre o setor gravando byte a byte no buffer enquanto:
+                    // a) nao chegar ao final do setor
+                    // b) nao ultrapassar o tamanho maximo do arquivo
+                    // c) nao ultrapassar o request de bytes a serem lidos
+
+                    /* ===========================
+                    Calcular byte inicial do setor bloco de dados
+                       ===========================*/
+
+                    while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < size){
+                        memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
+                        *(buffer + bytes_read) = valor_byte;
+                        ind_byte++;
+                        bytes_read++;
+                        open_files[handle].current_pointer++;
+                    }
+                    k++;
+                    ind_byte = 0;
+                }
+                j++;
+            }
+            i++;
+        }
     }
+
+
+    // Leitura de dados por INDIREÇÃO DUPLA
+    unsigned char buffer_setor_indirecao_dupla[TAM_SETOR];
+    unsigned int indice_bloco_indirecao_dupla, setor_inicio_bloco_indirecao_dupla;
+    int l, m;
+
+    // Le dos blocos de indirecao dupla e atualiza current_pointer
     if(open_files[handle].current_pointer < ((bytes_por_bloco/sizeof(DWORD))**2)*bytes_por_bloco){
-        // Le dos blocos de indirecao dupla e atualiza current_pointer
+
+        int setor_inicio_bloco_indirecao_dupla = inode.doubleIndPtr * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
+
+        /* ===========================
+           Calcular setor inicial do bloco de indirecao dupla
+           ===========================*/
+
+        k=0;
+        // Para todo setor no bloco de ind dupla
+        while(k < superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < size){
+
+            if(read_sector(base + setor_inicio_bloco_indirecao_dupla + k, buffer_setor_indirecao_dupla)){ // Le o setor
+                return -1;
+            }
+
+            /* ===========================
+               Calcular ponteiro inicial do setor de indirecao dupla
+               ===========================*/
+            l = 0;
+
+            // Para todo ponteiro (que aponta para um bloco de ind simples) nesse setor
+            while(l < qtd_ponteiros_por_setor && bytes_read < inode.bytesFileSize && bytes_read < size){
+                DWORD pt1;
+                memcpy(&pt1, &buffer_setor_indirecao_dupla[sizeof(DWORD)*l], sizeof(DWORD)); // Le o ponteiro
+                int setor_inicio_bloco = pt1 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
+
+            /* ===========================
+               Calcular setor inicial do bloco de indirecao simples
+               ===========================*/
+                i=0;
+
+                // Para todo setor no bloco de ind simples
+                while(i<superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < size){
+                    if(read_sector(base + setor_inicio_bloco + i, buffer_setor_indirecao)){ // Le o setor
+                        return -1;
+                    }
+
+                    /* ===========================
+                       Calcular ponteiro inicial do bloco de indirecao simples
+                       ===========================*/
+                    j=0;
+
+                    // Para todo ponteiro (para um bloco de dados) nesse setor
+                    while(j<qtd_ponteiros_por_setor && bytes_read < inode.bytesFileSize && bytes_read < size){
+                        DWORD pt2;
+                        memcpy(&pt2, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+
+                        setor_inicio_bloco_dados = pt2 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
+
+                        /* ===========================
+                           Calcular setor inicial do bloco de dados
+                           ===========================*/
+                        m=0;
+
+                        // Agora traz setores do bloco apontado pelo ponteiro pt2
+                        while(m<superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < size){
+                            if(read_sector(base + setor_inicio_bloco_dados + m, buffer_setor_dados)){ // Le o setor
+                                return -1;
+                            }
+
+                            /* ===========================
+                               Calcular byte inicial do setor de dados
+                               ===========================*/
+                            ind_byte=0;
+
+                            while(ind_byte < TAM_SETOR && bytes_read < inode.bytesFileSize && bytes_read < size){
+                                memcpy(&valor_byte, &buffer_setor_dados[ind_byte], 1);
+                                *(buffer + bytes_read) = valor_byte;
+                                ind_byte++;
+                                bytes_read++;
+                                open_files[handle].current_pointer++;
+                            }
+                            m++;
+                        }
+                        j++;
+                    }
+                    i++;
+                }
+                l++;
+            }
+            k++;
+        }
+
     }
 
 	return bytes_read;
