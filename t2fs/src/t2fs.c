@@ -846,18 +846,18 @@ int opendir2 (void) {
 
     int i = 0;
     for(i=0; i<2; i++){  // Indica blocos apontados diretamente como livres
-        if(inode.dataPtr[i] != -1){
+        if(inode.dataPtr[i] != 0){
             if (carregaRegistrosDataPtr(inode.dataPtr[i]) == -1){
                 return -1;
             }
         }
     }
-    if (inode.singleIndPtr != -1){
+    if (inode.singleIndPtr != 0){
         if (carregaRegistrosSingleIndPtr(inode.singleIndPtr) == -1){
             return -1;
         }
     }
-    if (inode.doubleIndPtr != -1){
+    if (inode.doubleIndPtr != 0){
         if (carregaRegistrosDoubleIndPtr(inode.doubleIndPtr) == -1){
             return -1;
         }
@@ -931,10 +931,6 @@ int closedir2 (void) {
     }
     */
 
-    /*TODO
-        Atualizar inode do diretorio
-            - Atualizar tamanho do diretorio: soma dos tamanhos dos arquivos
-    */
     unsigned char buffer[TAM_SETOR] = {0};
 
     // Carrega conteúdos do inode do dir
@@ -959,6 +955,83 @@ int closedir2 (void) {
 
     inode.bytesFileSize  = qnt_registros * sizeof(struct t2fs_record);
     inode.blocksFileSize = ceil(inode.bytesFileSize / superbloco_montado.blockSize);
+
+
+    /// Atualiza informacoes de ponteiros diretos
+    int contador_inseridos_infos = 0;
+    aux = arquivos_diretorio;
+    if (qnt_registros > 0){
+
+        inode.dataPtr[0] = aux->registro.inodeNumber;
+        aux = aux->next;
+        contador_inseridos_infos++;
+
+        if(contador_inseridos_infos < qnt_registros){
+            inode.dataPtr[1] = aux->registro.inodeNumber;
+            aux = aux->next;
+            contador_inseridos_infos++;
+        } else {
+            inode.dataPtr[1] = 0;
+        }
+
+    } else {
+        inode.dataPtr[0] = 0; // caso nao haja nenhum arquivo a ser inserido ao fechar o dir, indica no primeiro ponteiro que está invalido
+    }
+
+        // Ponteiros indiretos - escrita de inodes
+
+    DWORD invalid = 0;
+
+    int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
+
+    unsigned char buffer_indPtr[TAM_SETOR] = {0}; // Buffer para leitura
+
+    boolean controle_fluxo = true; // controle do fluxo de leitura dos blocos
+    int ptr_setor = 0; // utilizado para leitura dos setores
+    int i_bloco = 0; // utilizado para leitura coletar os dados a partir do setor lido
+
+    if (contador_inseridos_infos < qnt_registros){
+        while (controle_fluxo) {
+            int setor = inode.singleIndPtr * superbloco_montado.blockSize + ptr_setor; // construcao do setor para leitura
+            if (read_sector(base + setor, buffer_indPtr) == -1){ // le do setor (arrumando valor com base)
+                return -1;
+            }
+
+            while(contador_inseridos_infos < qnt_registros && i_bloco < qtd_ponteiros_por_setor) {
+                memcpy(buffer_indPtr + i_bloco * sizeof(DWORD), (DWORD*) aux->registro.inodeNumber, sizeof(DWORD));
+                aux = aux->next;
+                contador_inseridos_infos++;
+
+                i_bloco++;
+            }
+
+            if (contador_inseridos_infos >= qnt_registros){
+                controle_fluxo = false;
+                memcpy(buffer_indPtr + i_bloco * sizeof(DWORD), &invalid, sizeof(DWORD)); // insere indicador de valor invalido no proximo identificador
+                contador_inseridos_infos++;
+            }
+
+            if(write_sector(base+setor, buffer_indPtr) == -1) {
+                return -1;
+            }
+
+            ptr_setor++;
+            if (ptr_setor >= superbloco_montado.blockSize){ // se passou dos setores considerando o tamanho do bloco, encerra laço
+                controle_fluxo = false;
+            }
+
+            i_bloco = 0;
+        }
+    } else {
+        inode.singleIndPtr = 0;
+    }
+
+
+    /// TODO - dubleIndPtr
+
+
+
+
 
     // Escreve as mudancas do inode do diretorio
     memcpy(&buffer[end_inode], &inode, sizeof(struct t2fs_inode));
