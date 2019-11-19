@@ -171,9 +171,9 @@ unsigned int checksum(struct t2fs_superbloco *superbloco)
     for(i=0; i<5; i++)
     {
         checksum += bytes_iniciais[i];
-    }
-    checksum = !checksum; // Complemento de 1
-    return checksum;
+	}
+	checksum = ~checksum; // Complemento de 1
+	return checksum;
 }
 
 /*-----------------------------------------------------------------------------
