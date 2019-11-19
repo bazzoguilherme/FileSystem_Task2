@@ -171,9 +171,9 @@ unsigned int checksum(struct t2fs_superbloco *superbloco)
     for(i=0; i<5; i++)
     {
         checksum += bytes_iniciais[i];
-	}
-	checksum = ~checksum; // Complemento de 1
-	return checksum;
+    }
+    checksum = ~checksum; // Complemento de 1
+    return checksum;
 }
 
 /*-----------------------------------------------------------------------------
@@ -1281,6 +1281,10 @@ int write2 (FILE2 handle, char *buffer, int size)
         else
         {
             indice_bloco_direto_a = aloca_bloco();
+            if(indice_bloco_direto_a <= 0)
+            {
+                return bytes_write;
+            }
             inode.dataPtr[0] = indice_bloco_direto_a;
             qtde_blocos_arquivo++;
         }
@@ -1336,6 +1340,10 @@ int write2 (FILE2 handle, char *buffer, int size)
         else
         {
             indice_bloco_direto_b = aloca_bloco();
+            if(indice_bloco_direto_b <= 0)
+            {
+                return bytes_write;
+            }
             inode.dataPtr[1] = indice_bloco_direto_b;
             qtde_blocos_arquivo++;
         }
@@ -1386,11 +1394,17 @@ int write2 (FILE2 handle, char *buffer, int size)
 
     if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco && bytes_write < size)
     {
-        if(inode.singleIndPtr == -1){
+        if(inode.singleIndPtr == -1)
+        {
             indice_bloco_indirecao = aloca_bloco();
+            if(indice_bloco_indirecao <= 0)
+            {
+                return bytes_write;
+            }
             inode.singleIndPtr = indice_bloco_indirecao;
         }
-        else{
+        else
+        {
             indice_bloco_indirecao = inode.singleIndPtr;
         }
 
@@ -1399,7 +1413,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         i = setor_indirecao_comeca_escrita;
 
         // Para CADA SETOR do bloco de ind simples, enquanto nao ultrapassar:
-            // - request de bytes a serem escritos
+        // - request de bytes a serem escritos
         while(i<superbloco_montado.blockSize && bytes_write < size)
         {
             // Le i-esimo setor de ponteiros para buffer
@@ -1417,12 +1431,18 @@ int write2 (FILE2 handle, char *buffer, int size)
             {
                 memcpy(&ponteiro, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
 
-                if(ponteiro == 0){
+                if(ponteiro == 0)
+                {
                     indice_bloco_dados = aloca_bloco();
+                    if(indice_bloco_dados <= 0)
+                    {
+                        return bytes_write;
+                    }
                     memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &indice_bloco_dados, sizeof(DWORD));
                     qtde_blocos_arquivo++;
                 }
-                else{
+                else
+                {
                     indice_bloco_dados = ponteiro;
                 }
                 // Calcula localizacao do bloco de dados apontado pelo j-esimo ponteiro
@@ -1486,8 +1506,14 @@ int write2 (FILE2 handle, char *buffer, int size)
 
     if(open_files[handle].current_pointer < ((bytes_por_bloco/sizeof(DWORD))^2)*bytes_por_bloco && bytes_write < size)
     {
-        if(inode.doubleIndPtr == -1){
+        if(inode.doubleIndPtr == -1)
+        {
             inode.doubleIndPtr = aloca_bloco();
+            if(inode.doubleIndPtr <= 0)
+            {
+                inode.doubleIndPtr = -1;
+                return bytes_write;
+            }
         }
         int setor_inicio_bloco_indirecao_dupla = inode.doubleIndPtr * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
 
@@ -1515,10 +1541,12 @@ int write2 (FILE2 handle, char *buffer, int size)
                 DWORD pt1;
                 memcpy(&pt1, &buffer_setor_indirecao_dupla[sizeof(DWORD)*l], sizeof(DWORD)); // Le o ponteiro
 
-                if(pt1 == 0){
+                if(pt1 == 0)
+                {
                     pt1 = aloca_bloco();
-                    if(pt1 <= 0){
-                        return -1;
+                    if(pt1 <= 0)
+                    {
+                        return bytes_write;
                     }
                     memcpy(&buffer_setor_indirecao_dupla[sizeof(DWORD)*l], &pt1, sizeof(DWORD));
                 }
@@ -1549,10 +1577,12 @@ int write2 (FILE2 handle, char *buffer, int size)
                         DWORD pt2;
                         memcpy(&pt2, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
 
-                        if(pt2 == 0){
+                        if(pt2 == 0)
+                        {
                             pt2 = aloca_bloco();
-                            if(pt2 <= 0){
-                                return -1;
+                            if(pt2 <= 0)
+                            {
+                                return bytes_write;
                             }
                             memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &pt2, sizeof(DWORD)); // Escreve o ponteiro
                             qtde_blocos_arquivo++;
@@ -1581,6 +1611,10 @@ int write2 (FILE2 handle, char *buffer, int size)
                                 bytes_write++;
                                 open_files[handle].current_pointer++;
                             }
+                            if(write_sector(base + setor_inicio_bloco_dados + m, buffer_setor_dados))  // Escreve o setor
+                            {
+                                return -1;
+                            }
                             m++;
                         }
                         j++;
@@ -1603,7 +1637,8 @@ int write2 (FILE2 handle, char *buffer, int size)
 
     /// Escrita do inode (possivelmente) atualizado
     inode.blocksFileSize = qtde_blocos_arquivo;
-    if(open_files[handle].current_pointer > inode.bytesFileSize){
+    if(open_files[handle].current_pointer > inode.bytesFileSize)
+    {
         inode.bytesFileSize = open_files[handle].current_pointer;
     }
 
@@ -1658,7 +1693,342 @@ int closedir2 (void)
     {
         return -1;
     }
-    return -1;
+
+    if(diretorio_aberto)
+    {
+        return -1;
+    }
+
+    int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
+    unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize;
+    unsigned char buffer_inode[TAM_SETOR];
+    unsigned char buffer[TAM_SETOR];
+    int registros_escritos = 0;
+    int ind_setor_dados, ind_byte_dados, ind_bloco;
+    int registros_por_setor = TAM_SETOR / sizeof(struct t2fs_record);
+    int tam_registro = sizeof(struct t2fs_record);
+
+    // Calcula o setor de inicio da area de inodes
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+
+    // Le inode do diretorio raiz (i-node 0)
+    struct t2fs_inode inode;
+    if(read_sector(base + inicio_area_inodes, buffer_inode))
+    {
+        return -1;
+    }
+    memcpy(&inode, buffer_inode, sizeof(struct t2fs_inode));
+
+    // Adiciona um registro invalido ao fim da lista, para usar como criterio de parada na opendir2
+    struct t2fs_record registro_invalido;
+    registro_invalido.inodeNumber = -1;
+    strcpy(registro_invalido.name, "");
+    registro_invalido.TypeVal = TYPEVAL_INVALIDO;
+    arquivos_diretorio = insert_element(arquivos_diretorio, registro_invalido);
+
+    // Calcula o tamanho da lista de registros
+    int qtd_registros = 0;
+    Linked_List *aux = arquivos_diretorio;
+    while(aux != NULL)
+    {
+        qtd_registros++;
+        aux = aux->next;
+    }
+
+    aux = arquivos_diretorio;
+
+
+    /// Escrita no primeiro bloco direto
+    if(registros_escritos != qtd_registros)
+    {
+        int indice_bloco_direto_a;
+
+        if(inode.dataPtr[0] == -1)
+        {
+            indice_bloco_direto_a = aloca_bloco();
+            if(indice_bloco_direto_a <= 0)
+            {
+                return -1;
+            }
+            inode.dataPtr[0] = indice_bloco_direto_a;
+        }
+
+        indice_bloco_direto_a = inode.dataPtr[0];
+
+        // Calcula setor de inicio do bloco de dados do ponteiro direto
+        int setor_inicio_direto_a = indice_bloco_direto_a * superbloco_montado.blockSize;
+        ind_setor_dados = 0;
+
+        while(ind_setor_dados < superbloco_montado.blockSize && registros_escritos < qtd_registros)
+        {
+            while(registros_escritos < qtd_registros &&  registros_escritos < registros_por_setor)
+            {
+                memcpy(buffer + registros_escritos*tam_registro, aux, tam_registro);
+                aux = aux->next;
+                registros_escritos++;
+            }
+
+            if(write_sector(base + setor_inicio_direto_a + ind_setor_dados, buffer))  // Escreve o setor
+            {
+                return -1;
+            }
+
+            ind_setor_dados++;
+        }
+    }
+
+    /// Escrita no segundo bloco direto
+    if(registros_escritos != qtd_registros)
+    {
+        int indice_bloco_direto_b;
+
+        if(inode.dataPtr[1] == -1)
+        {
+            indice_bloco_direto_b = aloca_bloco();
+            if(indice_bloco_direto_b <= 0)
+            {
+                return -1;
+            }
+            inode.dataPtr[1] = indice_bloco_direto_b;
+        }
+
+        indice_bloco_direto_b = inode.dataPtr[1];
+
+        // Calcula setor de inicio do bloco de dados do ponteiro direto
+        int setor_inicio_direto_b = indice_bloco_direto_b * superbloco_montado.blockSize;
+        ind_setor_dados = 0;
+
+        while(ind_setor_dados < superbloco_montado.blockSize && registros_escritos < qtd_registros)
+        {
+            int ind_reg = 0;
+            while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
+            {
+                memcpy(buffer + ind_reg*tam_registro, aux, tam_registro);
+                aux = aux->next;
+                registros_escritos++;
+                ind_reg++;
+            }
+
+            if(write_sector(base + setor_inicio_direto_b + ind_setor_dados, buffer))  // Escreve o setor
+            {
+                return -1;
+            }
+
+            ind_setor_dados++;
+        }
+    }
+
+
+/// Escrita por INDIREÇÃO SIMPLES
+    unsigned char buffer_setor_indirecao[TAM_SETOR];
+    unsigned int i, j, k;
+    unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
+    unsigned indice_bloco_dados, setor_inicio_bloco_dados;
+    DWORD ponteiro;
+
+    if(registros_escritos != qtd_registros)
+    {
+        if(inode.singleIndPtr == -1)
+        {
+            indice_bloco_indirecao = aloca_bloco();
+            if(indice_bloco_indirecao <= 0)
+            {
+                return -1;
+            }
+            inode.singleIndPtr = indice_bloco_indirecao;
+        }
+        else
+        {
+            indice_bloco_indirecao = inode.singleIndPtr;
+        }
+
+        setor_inicio_bloco_indirecao = indice_bloco_indirecao * superbloco_montado.blockSize; //Localizacao do bloco de ind simples
+        i = 0;
+
+        while(i<superbloco_montado.blockSize && registros_escritos < qtd_registros)
+        {
+            // Le i-esimo setor de ponteiros para buffer
+            if(read_sector(base + setor_inicio_bloco_indirecao + i, buffer_setor_indirecao))
+            {
+                return -1;
+            }
+
+            j = 0;
+            // Para todo ponteiro (para um bloco de dados) nesse setor
+            while(j < qtd_ponteiros_por_setor && registros_escritos < qtd_registros)
+            {
+                memcpy(&ponteiro, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+
+                if(ponteiro == 0)
+                {
+                    indice_bloco_dados = aloca_bloco();
+                    if(indice_bloco_dados <= 0)
+                    {
+                        return -1;
+                    }
+                    memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &indice_bloco_dados, sizeof(DWORD));
+                }
+                else
+                {
+                    indice_bloco_dados = ponteiro;
+                }
+
+                // Calcula localizacao do bloco de dados apontado pelo j-esimo ponteiro
+                setor_inicio_bloco_dados = indice_bloco_dados * superbloco_montado.blockSize; //Localizacao do bloco de dados
+
+                k = 0;
+                while(k < superbloco_montado.blockSize && registros_escritos < qtd_registros)
+                {
+                    int ind_reg = 0;
+                    while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
+                    {
+                        memcpy(buffer + ind_reg*tam_registro, aux, tam_registro);
+                        aux = aux->next;
+                        registros_escritos++;
+                        ind_reg++;
+                    }
+
+                    if(write_sector(base + setor_inicio_bloco_dados + k, buffer))
+                    {
+                        return -1;
+                    }
+                    k++;
+                }
+                j++;
+            }
+            // Escrita do setor para escrever os possiveis ponteiros criados
+            if(write_sector(base + setor_inicio_bloco_indirecao + i, buffer_setor_indirecao))
+            {
+                return -1;
+            }
+            i++;
+        }
+    }
+
+
+/// Escrita por INDIREÇÃO DUPLA
+    unsigned char buffer_setor_indirecao_dupla[TAM_SETOR];
+    unsigned int indice_bloco_indirecao_dupla, setor_inicio_bloco_indirecao_dupla;
+    int l, m;
+
+
+    if(registros_escritos < qtd_registros)
+    {
+        if(inode.doubleIndPtr == -1)
+        {
+            inode.doubleIndPtr = aloca_bloco();
+            if(inode.doubleIndPtr <= 0)
+            {
+                inode.doubleIndPtr = -1;
+                return -1;
+            }
+        }
+
+        int setor_inicio_bloco_indirecao_dupla = inode.doubleIndPtr * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
+        k = 0;
+        // Para todo setor no bloco de ind dupla
+        while(k < superbloco_montado.blockSize && registros_escritos < qtd_registros)
+        {
+            if(read_sector(base + setor_inicio_bloco_indirecao_dupla + k, buffer_setor_indirecao_dupla))  // Le o setor
+            {
+                return -1;
+            }
+
+            l = 0;
+            // Para todo ponteiro (que aponta para um bloco de ind simples) nesse setor
+            while(l < qtd_ponteiros_por_setor && registros_escritos < qtd_registros)
+            {
+                DWORD pt1;
+                memcpy(&pt1, &buffer_setor_indirecao_dupla[sizeof(DWORD)*l], sizeof(DWORD)); // Le o ponteiro
+
+                if(pt1 == 0)
+                {
+                    pt1 = aloca_bloco();
+                    if(pt1 <= 0)
+                    {
+                        return -1;
+                    }
+                    memcpy(&buffer_setor_indirecao_dupla[sizeof(DWORD)*l], &pt1, sizeof(DWORD));
+                }
+
+                int setor_inicio_bloco = pt1 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
+                i = 0;
+
+                // Para todo setor no bloco de ind simples
+                while(i<superbloco_montado.blockSize && registros_escritos < qtd_registros)
+                {
+                    if(read_sector(base + setor_inicio_bloco + i, buffer_setor_indirecao))  // Le o setor
+                    {
+                        return -1;
+                    }
+
+                    j = 0;
+                    // Para todo ponteiro (para um bloco de dados) nesse setor
+                    while(j<qtd_ponteiros_por_setor && registros_escritos < qtd_registros)
+                    {
+                        DWORD pt2;
+                        memcpy(&pt2, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+
+                        if(pt2 == 0)
+                        {
+                            pt2 = aloca_bloco();
+                            if(pt2 <= 0)
+                            {
+                                return -1;
+                            }
+                            memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &pt2, sizeof(DWORD)); // Escreve o ponteiro
+                        }
+
+                        setor_inicio_bloco_dados = pt2 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
+
+                        m = 0;
+                        // Agora traz setores do bloco apontado pelo ponteiro pt2
+                        while(m<superbloco_montado.blockSize && registros_escritos < qtd_registros)
+                        {
+                            int ind_reg = 0;
+                            while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
+                            {
+                                memcpy(buffer + ind_reg*tam_registro, aux, tam_registro);
+                                aux = aux->next;
+                                registros_escritos++;
+                                ind_reg++;
+                            }
+                            if(write_sector(base + setor_inicio_bloco_dados + m, buffer))  // Escreve o setor
+                            {
+                                return -1;
+                            }
+                            m++;
+                        }
+                        j++;
+                    }
+                    if(write_sector(base + setor_inicio_bloco + i, buffer_setor_indirecao))  // Le o setor
+                    {
+                        return -1;
+                    }
+                    i++;
+                }
+                l++;
+            }
+            if(write_sector(base + setor_inicio_bloco_indirecao_dupla + k, buffer_setor_indirecao_dupla))  // Le o setor
+            {
+                return -1;
+            }
+            k++;
+        }
+    }
+
+    /// Escrita do inode (possivelmente) atualizado
+    inode.bytesFileSize = registros_escritos * tam_registro;
+    inode.blocksFileSize = ceil(inode.bytesFileSize / bytes_por_bloco);
+
+    memcpy(&buffer_inode[0], &inode, sizeof(struct t2fs_inode));
+    if(write_sector(base + inicio_area_inodes, buffer_inode))
+    {
+        return -1;
+    }
+
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
