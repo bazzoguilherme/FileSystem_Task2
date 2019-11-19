@@ -846,18 +846,18 @@ int opendir2 (void) {
 
     int i = 0;
     for(i=0; i<2; i++){  // Indica blocos apontados diretamente como livres
-        if(inode.dataPtr[i] != 0){
+        if(inode.dataPtr[i] != -1){ // ponteiro invalido
             if (carregaRegistrosDataPtr(inode.dataPtr[i]) == -1){
                 return -1;
             }
         }
     }
-    if (inode.singleIndPtr != 0){
+    if (inode.singleIndPtr != -1){ // ponteiro invalido
         if (carregaRegistrosSingleIndPtr(inode.singleIndPtr) == -1){
             return -1;
         }
     }
-    if (inode.doubleIndPtr != 0){
+    if (inode.doubleIndPtr != -1){ // ponteiro invalido
         if (carregaRegistrosDoubleIndPtr(inode.doubleIndPtr) == -1){
             return -1;
         }
