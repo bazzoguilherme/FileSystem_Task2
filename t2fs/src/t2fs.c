@@ -1903,6 +1903,11 @@ int readdir2 (DIRENT2 *dentry)
         return -1;
     }
 
+    if(current_dentry == NULL){
+        current_dentry = arquivos_diretorio;
+        return -1;
+    }
+
     struct t2fs_record registro = current_dentry->registro;
 
     DIRENT2 entradaDir;
