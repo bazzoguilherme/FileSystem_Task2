@@ -482,7 +482,7 @@ FILE2 create2 (char *filename)
     // Caso ja existir, remove o conteudo, assumindo tamanho de zero bytes. (Deleta o arquivo e continua a criacao)
     if(contains(arquivos_diretorio, filename))
     {
-        if(closedir2){
+        if(closedir2()){
             return -1;
         }
         if(delete2(filename) != 0)
@@ -491,7 +491,7 @@ FILE2 create2 (char *filename)
         }
     }
 
-    if(closedir2){
+    if(closedir2()){
         return -1;
     }
 
@@ -935,7 +935,6 @@ int read2 (FILE2 handle, char *buffer, int size)
     }
     memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
 
-    unsigned int qtde_blocos_arquivo = inode.blocksFileSize;
     unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize;
 
     int sizeR = size;
@@ -950,7 +949,7 @@ int read2 (FILE2 handle, char *buffer, int size)
     unsigned int ind_byte = open_files[handle].current_pointer;
     unsigned char valor_byte;
     unsigned int bytes_read = 0;
-    int ind_setor_dados, ind_byte_dados;
+    int ind_setor_dados;
 
     /// Faz a leitura dos dados do primeiro ponteiro direto do inode
     if(open_files[handle].current_pointer < bytes_por_bloco && bytes_read < sizeR)
@@ -1124,7 +1123,6 @@ int read2 (FILE2 handle, char *buffer, int size)
 
     /// Leitura de dados por INDIREÇÃO DUPLA
     unsigned char buffer_setor_indirecao_dupla[TAM_SETOR];
-    unsigned int indice_bloco_indirecao_dupla, setor_inicio_bloco_indirecao_dupla;
     int l, m;
 
     // Le dos blocos de indirecao dupla e atualiza current_pointer
@@ -1515,7 +1513,6 @@ int write2 (FILE2 handle, char *buffer, int size)
 
 /// Escrita de dados por INDIREÇÃO DUPLA
     unsigned char buffer_setor_indirecao_dupla[TAM_SETOR];
-    unsigned int indice_bloco_indirecao_dupla, setor_inicio_bloco_indirecao_dupla;
     int l, m;
 
 
@@ -1951,13 +1948,12 @@ int closedir2 (void)
     unsigned char buffer_inode[TAM_SETOR];
     unsigned char buffer[TAM_SETOR];
     int registros_escritos = 0;
-    int ind_setor_dados, ind_byte_dados, ind_bloco, ind_reg;
+    int ind_setor_dados, ind_reg;
     int registros_por_setor = TAM_SETOR / sizeof(struct t2fs_record);
     int tam_registro = sizeof(struct t2fs_record);
 
     // Calcula o setor de inicio da area de inodes
     int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
 
     // Le inode do diretorio raiz (i-node 0)
     struct t2fs_inode inode;
@@ -2158,7 +2154,6 @@ int closedir2 (void)
 
 /// Escrita por INDIREÇÃO DUPLA
     unsigned char buffer_setor_indirecao_dupla[TAM_SETOR];
-    unsigned int indice_bloco_indirecao_dupla, setor_inicio_bloco_indirecao_dupla;
     int l, m;
 
 
