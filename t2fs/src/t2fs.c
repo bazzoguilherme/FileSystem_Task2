@@ -482,7 +482,7 @@ FILE2 create2 (char *filename)
     // Caso ja existir, remove o conteudo, assumindo tamanho de zero bytes. (Deleta o arquivo e continua a criacao)
     if(contains(arquivos_diretorio, filename))
     {
-        if(closedir2){
+        if(closedir2()){
             return -1;
         }
         if(delete2(filename) != 0)
@@ -491,7 +491,7 @@ FILE2 create2 (char *filename)
         }
     }
 
-    if(closedir2){
+    if(closedir2()){
         return -1;
     }
 
@@ -594,6 +594,7 @@ int delete2 (char *filename)
 
     if (!contains(arquivos_diretorio, filename))  // Caso não haja o arquivo no diretorio, retorna erro
     {
+        closedir2();
         return -1;
     }
 
@@ -601,6 +602,11 @@ int delete2 (char *filename)
     struct t2fs_record registro;
     if(get_element(arquivos_diretorio, filename, &registro))
     {
+        closedir2();
+        return -1;
+    }
+
+    if(closedir2()){
         return -1;
     }
 
@@ -628,12 +634,6 @@ int delete2 (char *filename)
     {
         inode.RefCounter--;
         arquivos_diretorio = delete_element(arquivos_diretorio, filename);
-
-        if(closedir2())  // Fecha o diretorio
-        {
-            return -1;
-        }
-
         return 0;
     }
 
@@ -752,6 +752,11 @@ int delete2 (char *filename)
         return -1;
     }
 
+
+    if(opendir2()){
+        return -1;
+    }
+
     // Deleta o arquivo da lista de arquivos do diretorio
     arquivos_diretorio = delete_element(arquivos_diretorio, filename);
 
@@ -783,6 +788,7 @@ FILE2 open2 (char *filename)
     struct t2fs_record registro;
     if(get_element(arquivos_diretorio, filename, &registro))
     {
+        closedir2();
         return -1;
     }
 
@@ -796,6 +802,7 @@ FILE2 open2 (char *filename)
 
     if (pos_insercao_open_file >= 10)  // Retorna -1 caso já haja 10 ou mais arquivos abertos
     {
+        closedir2();
         return -1;                      // Isso significa que não há espaço disponível para abrir arquivo
     }
 
@@ -819,6 +826,7 @@ FILE2 open2 (char *filename)
 
         if(read_sector(base + setor_inode, buffer))
         {
+            closedir2();
             return -1;
         }
 
@@ -830,6 +838,7 @@ FILE2 open2 (char *filename)
         int setor_bloco = indice_bloco * superbloco_montado.blockSize;
         if(read_sector(base + setor_bloco, buffer))
         {
+            closedir2();
             return -1;
         }
 
@@ -838,6 +847,7 @@ FILE2 open2 (char *filename)
 
         if(!contains(arquivos_diretorio, nome_arq_referenciado))
         {
+            closedir2();
             return -1; // Arquivo referenciado inexistente
         }
     }
@@ -911,6 +921,12 @@ int read2 (FILE2 handle, char *buffer, int size)
     // Le registro do arquivo indicado por filename
     struct t2fs_record registro;
     if(get_element(arquivos_diretorio, open_files[handle].filename, &registro))
+    {
+        closedir2();
+        return -1;
+    }
+
+    if(closedir2())
     {
         return -1;
     }
@@ -1218,12 +1234,6 @@ int read2 (FILE2 handle, char *buffer, int size)
             k++;
         }
     }
-
-    if(closedir2())
-    {
-        return -1;
-    }
-
     return bytes_read;
 }
 
@@ -1252,6 +1262,10 @@ int write2 (FILE2 handle, char *buffer, int size)
     struct t2fs_record registro;
     if(get_element(arquivos_diretorio, open_files[handle].filename, &registro))
     {
+        return -1;
+    }
+
+    if(closedir2()){
         return -1;
     }
 
@@ -1663,11 +1677,6 @@ int write2 (FILE2 handle, char *buffer, int size)
         return -1;
     }
 
-    if(closedir2())
-    {
-        return -1;
-    }
-
     return bytes_write;
 }
 
@@ -1889,13 +1898,8 @@ int readdir2 (DIRENT2 *dentry)
 
     if(!tem_particao_montada)
     {
-        if(!tem_particao_montada)
-        {
-            return -1;
-            return -1;
-        }
+        return -1;
     }
-    return -1;
 
     if(!diretorio_aberto)  // Caso diretorio nao esteja aberto, retorna erro
     {
@@ -1941,7 +1945,7 @@ int closedir2 (void)
         return -1;
     }
 
-    if(diretorio_aberto)
+    if(!diretorio_aberto)
     {
         return -1;
     }
@@ -2287,7 +2291,6 @@ int closedir2 (void)
     arquivos_diretorio = NULL;
     current_dentry = NULL;
 
-
     diretorio_aberto = false;
 
     return 0;
@@ -2312,12 +2315,14 @@ int sln2 (char *linkname, char *filename)
     // Verifica se ja nao existe um arquivo com mesmo nome que o link
     if(contains(arquivos_diretorio, linkname))
     {
+        closedir2();
         return -1;
     }
 
     // Verifica se o arquivo referenciado existe
     if(!contains(arquivos_diretorio, filename))
     {
+        closedir2();
         return -1;
     }
 
@@ -2325,6 +2330,7 @@ int sln2 (char *linkname, char *filename)
     int indice_bloco = aloca_bloco();
     if(indice_bloco <= 0)
     {
+        closedir2();
         return -1;
     }
 
@@ -2335,6 +2341,7 @@ int sln2 (char *linkname, char *filename)
     int setor_inicio_bloco = indice_bloco * superbloco_montado.blockSize;
     if(write_sector(base + setor_inicio_bloco, buffer))
     {
+        closedir2();
         return -1;
     }
 
@@ -2343,6 +2350,7 @@ int sln2 (char *linkname, char *filename)
     registro.TypeVal = TYPEVAL_LINK;
     if (strlen(linkname) > 50)  // Caso o nome passado como parametro seja maior que o tamanho máximo
     {
+        closedir2();
         return -1;              //   do campo `name` para registro.
     }
     strcpy(registro.name, linkname);
@@ -2352,6 +2360,7 @@ int sln2 (char *linkname, char *filename)
     int indice_inode;
     if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0)  // Se retorno da funcao for negativo, deu erro
     {
+        closedir2();
         return -1;                                        // Se for 0, nao ha blocos livres
     }
 
@@ -2376,21 +2385,25 @@ int sln2 (char *linkname, char *filename)
 
     if(read_sector(base + setor_novo_inode, buffer))
     {
+        closedir2();
         return -1;
     }
     memcpy(&buffer[end_novo_inode], &inode, sizeof(struct t2fs_inode));
     if(write_sector(base + setor_novo_inode, buffer))
     {
+        closedir2();
         return -1;
     }
 
     if(setBitmap2(BITMAP_INODE, indice_inode, 1))
     {
+        closedir2();
         return -1;
     }
     if(setBitmap2(BITMAP_DADOS, indice_bloco, 1))
     {
         setBitmap2(BITMAP_INODE, indice_inode, 0);
+        closedir2();
         return -1;
     }
 
@@ -2423,12 +2436,14 @@ int hln2(char *linkname, char *filename)
     // Verifica se ja nao existe um arquivo com mesmo nome que o link
     if(contains(arquivos_diretorio, linkname))
     {
+        closedir2();
         return -1;
     }
 
     // Verifica se o arquivo referenciado existe
     if(!contains(arquivos_diretorio, filename))
     {
+        closedir2();
         return -1;
     }
 
@@ -2437,6 +2452,7 @@ int hln2(char *linkname, char *filename)
     registro_hardlink.TypeVal = TYPEVAL_REGULAR; // Hard link eh um registro regular
     if (strlen(linkname) > 50)  // Caso o nome passado como parametro seja maior que o tamanho máximo
     {
+        closedir2();
         return -1;              //   do campo `name` para registro.
     }
     strcpy(registro_hardlink.name, linkname);
@@ -2445,6 +2461,7 @@ int hln2(char *linkname, char *filename)
     struct t2fs_record registro;
     if(get_element(arquivos_diretorio, filename, &registro))
     {
+        closedir2();
         return -1;
     }
     int indice_inode = registro.inodeNumber;
@@ -2460,6 +2477,7 @@ int hln2(char *linkname, char *filename)
     unsigned char buffer[TAM_SETOR];
     if(read_sector(base + setor_inode, buffer))
     {
+        closedir2();
         return -1;
     }
     memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
