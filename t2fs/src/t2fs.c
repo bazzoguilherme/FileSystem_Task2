@@ -720,10 +720,12 @@ int carregaRegistrosDataPtr(DWORD blockNumber){
 		    memcpy(&registro, buffer + j * sizeof(struct t2fs_record), sizeof(struct t2fs_record));
             if(registro.TypeVal != 0x00){
                 arquivos_diretorio = insert_element(arquivos_diretorio, registro); // Adiciona registro em lista de arquivos abertos
+            } else {
+                return 0; // Ao chegar ao arquivo invalido, retorna - sem erros
             }
 		}
 	}
-	return -1;
+	return 0;
 }
 
 
