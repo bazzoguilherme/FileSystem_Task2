@@ -14,12 +14,14 @@
 #define TAM_SETOR 256    // Tamanho de um setor em bytes
 
 
-typedef struct file_t2fs {
+typedef struct file_t2fs
+{
     char filename[MAX_FILE_NAME_SIZE+1];
     int current_pointer;
-}FILE_T2FS;
+} FILE_T2FS;
 
-typedef struct linked_list {
+typedef struct linked_list
+{
     struct t2fs_record registro;
     struct linked_list* next;
 } Linked_List;
@@ -38,24 +40,28 @@ int base = 0;   // Endereco de inicio da particao montada
 /*-----------------------------------------------------------------------------
 Inicialização de lista encadeada
 -----------------------------------------------------------------------------*/
-Linked_List* create_linked_list(){
+Linked_List* create_linked_list()
+{
     return NULL;
 }
 
 /*-----------------------------------------------------------------------------
 Insercao de elemento ao final da lista encadeada
 -----------------------------------------------------------------------------*/
-Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_) {
+Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_)
+{
     Linked_List* new_node = (Linked_List*)malloc(sizeof(Linked_List));
     new_node->registro = registro_;
     new_node->next = NULL;
 
-    if (list == NULL){
+    if (list == NULL)
+    {
         return new_node;
     }
 
     Linked_List* aux = list;
-    while (aux->next != NULL){
+    while (aux->next != NULL)
+    {
         aux = aux->next;
     }
     aux->next = new_node;
@@ -68,10 +74,13 @@ Coleta de elemento da lista - int indica se ocorreu certo
     0 - okay
    -1 - erro
 -----------------------------------------------------------------------------*/
-int get_element(Linked_List* list, char* nome_registro_, struct t2fs_record* registro){
+int get_element(Linked_List* list, char* nome_registro_, struct t2fs_record* registro)
+{
     Linked_List* aux = list;
-    while (aux!=NULL){
-        if(strcmp(aux->registro.name, nome_registro_) == 0){
+    while (aux!=NULL)
+    {
+        if(strcmp(aux->registro.name, nome_registro_) == 0)
+        {
             registro = &aux->registro;
             return 0;
         }
@@ -84,25 +93,30 @@ int get_element(Linked_List* list, char* nome_registro_, struct t2fs_record* reg
 /*-----------------------------------------------------------------------------
 Deleta um elemento da lista encadeada
 -----------------------------------------------------------------------------*/
-Linked_List* delete_element(Linked_List* list, char* nome_registro_){
+Linked_List* delete_element(Linked_List* list, char* nome_registro_)
+{
     Linked_List* aux = NULL;
     Linked_List* freed_node = list;
 
-    if (list == NULL){
+    if (list == NULL)
+    {
         return NULL;
     }
 
-    if (strcmp(list->registro.name, nome_registro_) == 0){
+    if (strcmp(list->registro.name, nome_registro_) == 0)
+    {
         aux = list->next;
         free(list);
         return aux;
     }
 
-    while(freed_node->next!=NULL && strcmp(freed_node->registro.name, nome_registro_) != 0 ){
+    while(freed_node->next!=NULL && strcmp(freed_node->registro.name, nome_registro_) != 0 )
+    {
         aux = freed_node;
         freed_node = freed_node->next;
     }
-    if (strcmp(freed_node->registro.name, nome_registro_) == 0){
+    if (strcmp(freed_node->registro.name, nome_registro_) == 0)
+    {
         aux->next = freed_node->next;
         free(freed_node);
     }
@@ -113,10 +127,13 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_){
 /*-----------------------------------------------------------------------------
 Verificacao se existe um dado elemento (nome) no diretorio
 -----------------------------------------------------------------------------*/
-boolean contains(Linked_List* list, char* nome_registro_){
+boolean contains(Linked_List* list, char* nome_registro_)
+{
     Linked_List* aux = list;
-    while (aux!=NULL){
-        if(strcmp(aux->registro.name, nome_registro_) == 0){
+    while (aux!=NULL)
+    {
+        if(strcmp(aux->registro.name, nome_registro_) == 0)
+        {
             return true;
         }
         aux = aux->next;
@@ -128,11 +145,13 @@ boolean contains(Linked_List* list, char* nome_registro_){
 Le do buffer, a partir do endereço especificado, a quantidade de bytes informada.
 Retorna um int com os valores do buffer, considerando que os dados estao em little-endian
 -----------------------------------------------------------------------------*/
-int getDado(unsigned char buffer[], int end_inicio, int qtd){
+int getDado(unsigned char buffer[], int end_inicio, int qtd)
+{
     int i;
     int dado = buffer[end_inicio+qtd-1]; // Dados em little-endian
 
-    for(i=qtd-2; i>=0; i--){
+    for(i=qtd-2; i>=0; i--)
+    {
         dado <<= 8;
         dado |= buffer[end_inicio+i];
     }
@@ -143,16 +162,18 @@ int getDado(unsigned char buffer[], int end_inicio, int qtd){
 /*-----------------------------------------------------------------------------
 Calculo do checksum de um superbloco
 -----------------------------------------------------------------------------*/
-unsigned int checksum(struct t2fs_superbloco *superbloco){
-	unsigned int bytes_iniciais[5];
-	memcpy(bytes_iniciais, superbloco, 20); // 20 = numero de bytes a serem copiados
-	unsigned int checksum = 0;
-	int i=0;
-	for(i=0; i<5; i++){
+unsigned int checksum(struct t2fs_superbloco *superbloco)
+{
+    unsigned int bytes_iniciais[5];
+    memcpy(bytes_iniciais, superbloco, 20); // 20 = numero de bytes a serem copiados
+    unsigned int checksum = 0;
+    int i=0;
+    for(i=0; i<5; i++)
+    {
         checksum += bytes_iniciais[i];
-	}
-	checksum = !checksum; // Complemento de 1
-	return checksum;
+    }
+    checksum = !checksum; // Complemento de 1
+    return checksum;
 }
 
 /*-----------------------------------------------------------------------------
@@ -161,14 +182,17 @@ Procuna nos arquivos abertos se há um arquivo de nome 'filename'
         - True: caso arquivo encontrado
         - False: caso contrario
 -----------------------------------------------------------------------------*/
-boolean open_files_contem_arquivo(char* filename){
-	int i = 0;
-	for (i=0; i<MAX_OPEN_FILE; i++){
-        if (open_files[i].current_pointer != -1 && strcmp(open_files[i].filename, filename) == 0){
+boolean open_files_contem_arquivo(char* filename)
+{
+    int i = 0;
+    for (i=0; i<MAX_OPEN_FILE; i++)
+    {
+        if (open_files[i].current_pointer != -1 && strcmp(open_files[i].filename, filename) == 0)
+        {
             return true;
         }
-	}
-	return false;
+    }
+    return false;
 }
 
 /*-----------------------------------------------------------------------------
@@ -176,10 +200,12 @@ Função:	Verifica se tem um bloco livre e, caso sim, limpa-o e o marca no bitma
 como ocupado. Retorno: -1 caso erro, 0 caso nao houver um bloco livre, ou o indice do bloco
 alocado.
 -----------------------------------------------------------------------------*/
-int aloca_bloco(){
+int aloca_bloco()
+{
     int bloco;
     int i;
-    if((bloco = searchBitmap2(BITMAP_DADOS, 0)) <= 0) { // Se retorno da funcao for negativo, deu erro
+    if((bloco = searchBitmap2(BITMAP_DADOS, 0)) <= 0)   // Se retorno da funcao for negativo, deu erro
+    {
         return bloco;
     }
 
@@ -187,7 +213,8 @@ int aloca_bloco(){
 
     // Limpa bloco
     unsigned char buffer[TAM_SETOR] = {0};
-    for(i=0; i<superbloco_montado.blockSize; i++){
+    for(i=0; i<superbloco_montado.blockSize; i++)
+    {
         write_sector(base + setor_inicio + i, buffer);
     }
 
@@ -199,14 +226,16 @@ int aloca_bloco(){
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
 -----------------------------------------------------------------------------*/
-int identify2 (char *name, int size) {
-	char alunos[] = "Guilherme B. B. O. Malta - 00278237\nGuilherme T. Bazzo - 00287687\nNicolas C. Duranti - 00287679\n";
-	// Caso o nome dos alunos (com seus respectivos numeros de matricula) nao caibam no espaco dado, retorna erro
-	if(strlen(alunos) >= size){
-		return -1;
-	}
-	strcpy(name, alunos);
-	return 0;
+int identify2 (char *name, int size)
+{
+    char alunos[] = "Guilherme B. B. O. Malta - 00278237\nGuilherme T. Bazzo - 00287687\nNicolas C. Duranti - 00287679\n";
+    // Caso o nome dos alunos (com seus respectivos numeros de matricula) nao caibam no espaco dado, retorna erro
+    if(strlen(alunos) >= size)
+    {
+        return -1;
+    }
+    strcpy(name, alunos);
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -214,26 +243,29 @@ Função:	Formata logicamente uma partição do disco virtual t2fs_disk.dat para
 		arquivos T2FS definido usando blocos de dados de tamanho
 		corresponde a um múltiplo de setores dados por sectors_per_block.
 -----------------------------------------------------------------------------*/
-int format2(int partition, int sectors_per_block) {
+int format2(int partition, int sectors_per_block)
+{
 
-	unsigned char buffer[256];
-	int i;
+    unsigned char buffer[256];
+    int i;
 
-	if(read_sector(0, buffer)){ // Le o MBR, localizado no primeiro setor
+    if(read_sector(0, buffer))  // Le o MBR, localizado no primeiro setor
+    {
         return -1;
-	}
+    }
 
-	int num_particoes = getDado(buffer, 6, 2);
-	if(partition < 0 || partition >= num_particoes){ // Verifica se a particao é valida (entre 0 e num-1)
+    int num_particoes = getDado(buffer, 6, 2);
+    if(partition < 0 || partition >= num_particoes)  // Verifica se a particao é valida (entre 0 e num-1)
+    {
         return -1;
-	}
+    }
 
-	int tam_setor = getDado(buffer, 2, 2);
-	int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
-	int setor_fim = getDado(buffer, 12 + 24*partition, 4);
-	int num_setores = setor_fim - setor_inicio;
-	int num_blocos = num_setores / sectors_per_block;
-	int num_blocos_inodes = ceil(0.1 * num_blocos);
+    int tam_setor = getDado(buffer, 2, 2);
+    int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
+    int setor_fim = getDado(buffer, 12 + 24*partition, 4);
+    int num_setores = setor_fim - setor_inicio;
+    int num_blocos = num_setores / sectors_per_block;
+    int num_blocos_inodes = ceil(0.1 * num_blocos);
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
     int num_inodes = num_blocos_inodes * tam_bloco / sizeof(struct t2fs_inode);
@@ -243,149 +275,177 @@ int format2(int partition, int sectors_per_block) {
     struct t2fs_superbloco superbloco;
     char id[4] = "T2FS";
     strcpy(superbloco.id, id);
-	superbloco.version = 0x7E32;
-	superbloco.superblockSize = 1;
-	superbloco.freeBlocksBitmapSize = num_blocos_bitmap_blocos;	// Número de blocos do bitmap de blocos de dados
-	superbloco.freeInodeBitmapSize = num_blocos_bitmap_inode;	// Número de blocos do bitmap de i-nodes
-	superbloco.inodeAreaSize = num_blocos_inodes;  // Número de blocos reservados para os i-nodes
-	superbloco.blockSize = sectors_per_block;      // Número de setores que formam um bloco
-	superbloco.diskSize = num_blocos;              // Número total de blocos da partição
-	superbloco.Checksum = checksum(&superbloco);   // Soma dos 5 primeiros inteiros de 32 bits do superbloco, complementado de 1
+    superbloco.version = 0x7E32;
+    superbloco.superblockSize = 1;
+    superbloco.freeBlocksBitmapSize = num_blocos_bitmap_blocos;	// Número de blocos do bitmap de blocos de dados
+    superbloco.freeInodeBitmapSize = num_blocos_bitmap_inode;	// Número de blocos do bitmap de i-nodes
+    superbloco.inodeAreaSize = num_blocos_inodes;  // Número de blocos reservados para os i-nodes
+    superbloco.blockSize = sectors_per_block;      // Número de setores que formam um bloco
+    superbloco.diskSize = num_blocos;              // Número total de blocos da partição
+    superbloco.Checksum = checksum(&superbloco);   // Soma dos 5 primeiros inteiros de 32 bits do superbloco, complementado de 1
 
 
-	if(write_sector(setor_inicio, (unsigned char *)&superbloco)){
+    if(write_sector(setor_inicio, (unsigned char *)&superbloco))
+    {
         return -1;
-	}
+    }
 
 
 
-	/// Inicializacao dos Bitmaps
-	if(openBitmap2(setor_inicio)){
+    /// Inicializacao dos Bitmaps
+    if(openBitmap2(setor_inicio))
+    {
         return -1;
-	}
+    }
 
-	// Zera o bitmap de inodes
-	do{
-        if((i = searchBitmap2(BITMAP_INODE, 1)) < 0){ // Se retorno da funcao for negativo, deu erro
+    // Zera o bitmap de inodes
+    do
+    {
+        if((i = searchBitmap2(BITMAP_INODE, 1)) < 0)  // Se retorno da funcao for negativo, deu erro
+        {
             return -1;
         }
-        if(i){  // Se i for positivo, achou bit com valor 1
-            if(setBitmap2(BITMAP_INODE, i, 0)){
+        if(i)   // Se i for positivo, achou bit com valor 1
+        {
+            if(setBitmap2(BITMAP_INODE, i, 0))
+            {
                 return -1;
             }
         }
-	}while(i);
+    }
+    while(i);
 
 
     // Zera o bitmap de dados
-	do{
-        if((i = searchBitmap2(BITMAP_DADOS, 1)) < 0){ // Se retorno da funcao for negativo, deu erro
+    do
+    {
+        if((i = searchBitmap2(BITMAP_DADOS, 1)) < 0)  // Se retorno da funcao for negativo, deu erro
+        {
             return -1;
         }
-        if(i){  // Se i for positivo, achou bit com valor 1
-            if(setBitmap2(BITMAP_DADOS, i, 0)){
+        if(i)   // Se i for positivo, achou bit com valor 1
+        {
+            if(setBitmap2(BITMAP_DADOS, i, 0))
+            {
                 return -1;
             }
         }
-	}while(i);
+    }
+    while(i);
 
-	// Marca os blocos onde estao o superbloco e os bitmaps como ocupados
-	for(i=0; i < TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++){
-        if(setBitmap2(BITMAP_DADOS, i, 1)){
+    // Marca os blocos onde estao o superbloco e os bitmaps como ocupados
+    for(i=0; i < TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++)
+    {
+        if(setBitmap2(BITMAP_DADOS, i, 1))
+        {
             return -1;
         }
-	}
+    }
 
-	/// Inicializacao do bloco de dados do diretorio raiz
+    /// Inicializacao do bloco de dados do diretorio raiz
     int bloco_raiz = aloca_bloco();
-    if(bloco_raiz <= 0){ // Se erro ou se nao ha um bloco livre, retorna erro
+    if(bloco_raiz <= 0)  // Se erro ou se nao ha um bloco livre, retorna erro
+    {
         return -1;
     }
 
-	/// Inicializacao do i-node do diretorio raiz (i-node 0)
-	struct t2fs_inode inode_raiz;
+    /// Inicializacao do i-node do diretorio raiz (i-node 0)
+    struct t2fs_inode inode_raiz;
     inode_raiz.blocksFileSize = 1;
-	inode_raiz.bytesFileSize = 0;
-	inode_raiz.dataPtr[0] = bloco_raiz;
-	inode_raiz.dataPtr[1] = -1;
-	inode_raiz.singleIndPtr = -1;
-	inode_raiz.doubleIndPtr = -1;
-	inode_raiz.RefCounter = 1;
+    inode_raiz.bytesFileSize = 0;
+    inode_raiz.dataPtr[0] = bloco_raiz;
+    inode_raiz.dataPtr[1] = -1;
+    inode_raiz.singleIndPtr = -1;
+    inode_raiz.doubleIndPtr = -1;
+    inode_raiz.RefCounter = 1;
 
-	// Bloco de inicio da area de inodes
-	int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
-	int setor_inicio_area_inodes = inicio_area_inodes * TAM_SETOR;
-    if(write_sector(setor_inicio + setor_inicio_area_inodes, (unsigned char *)&inode_raiz)){
-        return -1;
-	}
-
-    if(setBitmap2(BITMAP_INODE, 0, 1)){ // Marca o bit do i-node como ocupado
+    // Bloco de inicio da area de inodes
+    int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
+    int setor_inicio_area_inodes = inicio_area_inodes * TAM_SETOR;
+    if(write_sector(setor_inicio + setor_inicio_area_inodes, (unsigned char *)&inode_raiz))
+    {
         return -1;
     }
 
-	if(closeBitmap2()){
+    if(setBitmap2(BITMAP_INODE, 0, 1))  // Marca o bit do i-node como ocupado
+    {
         return -1;
-	}
+    }
 
-	return 0;
+    if(closeBitmap2())
+    {
+        return -1;
+    }
+
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Monta a partição indicada por "partition" no diretório raiz
 -----------------------------------------------------------------------------*/
-int mount(int partition) {
+int mount(int partition)
+{
 
     unsigned char buffer[256];
     int i;
 
-    if(tem_particao_montada){
+    if(tem_particao_montada)
+    {
         return -1;
     }
 
-    if(read_sector(0, buffer)){ // Le o MBR, localizado no primeiro setor
+    if(read_sector(0, buffer))  // Le o MBR, localizado no primeiro setor
+    {
         return -1;
-	}
+    }
 
     int num_particoes = getDado(buffer, 6, 2);
-	if(partition < 0 || partition >= num_particoes){ // Verifica se a particao é valida (entre 0 e num-1)
+    if(partition < 0 || partition >= num_particoes)  // Verifica se a particao é valida (entre 0 e num-1)
+    {
         return -1;
-	}
+    }
 
-	int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
-	if(read_sector(setor_inicio, buffer)){ // Le o superbloco da particao
+    int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
+    if(read_sector(setor_inicio, buffer))  // Le o superbloco da particao
+    {
         return -1;
-	}
-	memcpy(&superbloco_montado, buffer, sizeof(struct t2fs_superbloco));
+    }
+    memcpy(&superbloco_montado, buffer, sizeof(struct t2fs_superbloco));
 
-	// Verifica se o superbloco foi formatado
-	if(!(checksum(&superbloco_montado) == superbloco_montado.Checksum)){
-		return -1;
-	}
+    // Verifica se o superbloco foi formatado
+    if(!(checksum(&superbloco_montado) == superbloco_montado.Checksum))
+    {
+        return -1;
+    }
 
     tem_particao_montada = true;
     base = setor_inicio;
 
-    for(i=0; i<MAX_OPEN_FILE; i++){ // Inicializa/Limpa a tabela de arquivos abertos
+    for(i=0; i<MAX_OPEN_FILE; i++)  // Inicializa/Limpa a tabela de arquivos abertos
+    {
         open_files[i].current_pointer = -1;
     }
 
-    if(openBitmap2(setor_inicio)){  // Abre os bitmaps da particao montada
+    if(openBitmap2(setor_inicio))   // Abre os bitmaps da particao montada
+    {
         return -1;
-	}
+    }
 
-	return 0;
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Desmonta a partição atualmente montada, liberando o ponto de montagem.
 -----------------------------------------------------------------------------*/
-int unmount(void) {
+int unmount(void)
+{
 
-    if(closeBitmap2()){ // Fecha os bitmaps da particao
+    if(closeBitmap2())  // Fecha os bitmaps da particao
+    {
         return -1;
     }
     tem_particao_montada = false;
-	return 0;
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -395,23 +455,29 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		arquivo já existente, o mesmo terá seu conteúdo removido e
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
-FILE2 create2 (char *filename) {
+FILE2 create2 (char *filename)
+{
 
-    if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
 
-    if (!filename){ // Caso filename seja NULL retorna -1
+    if (!filename)  // Caso filename seja NULL retorna -1
+    {
         return -1;
     }
-    if (filename[0] == '\0'){ // Caso filename seja um nome vazio retorna -1
+    if (filename[0] == '\0')  // Caso filename seja um nome vazio retorna -1
+    {
         return -1;
     }
 
     // Procurar se há algum arquivo no disco com mesmo nome.
     // Caso ja existir, remove o conteudo, assumindo tamanho de zero bytes. (Deleta o arquivo e continua a criacao)
-    if(contains(arquivos_diretorio, filename)){
-        if(delete2(filename) != 0){
+    if(contains(arquivos_diretorio, filename))
+    {
+        if(delete2(filename) != 0)
+        {
             return -1;
         }
     }
@@ -420,7 +486,8 @@ FILE2 create2 (char *filename) {
     /// T2FS Record
     struct t2fs_record created_file_record;
     created_file_record.TypeVal = TYPEVAL_REGULAR; // Registro regular
-    if (strlen(filename) > 50){ // Caso o nome passado como parametro seja maior que o tamanho máximo
+    if (strlen(filename) > 50)  // Caso o nome passado como parametro seja maior que o tamanho máximo
+    {
         return -1;              //   do campo `name` para registro.
     }
     strcpy(created_file_record.name, filename);
@@ -428,48 +495,54 @@ FILE2 create2 (char *filename) {
 
     // Selecao de um bloco de dados para o arquivo
     int indice_bloco_dados = aloca_bloco();
-    if(indice_bloco_dados <= 0){    // Se retorno da funcao for negativo, deu erro
-            return -1;              // Se for 0, nao ha blocos livres
+    if(indice_bloco_dados <= 0)     // Se retorno da funcao for negativo, deu erro
+    {
+        return -1;              // Se for 0, nao ha blocos livres
     }
 
     // Selecao de um i-node para o arquivo
     int indice_inode;
-    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0){ // Se retorno da funcao for negativo, deu erro
-            return -1;                                        // Se for 0, nao ha blocos livres
+    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0)  // Se retorno da funcao for negativo, deu erro
+    {
+        return -1;                                        // Se for 0, nao ha blocos livres
     }
 
     /// inicializacao i-node
     struct t2fs_inode new_inode;
-	new_inode.blocksFileSize = 1;
-	new_inode.bytesFileSize = 0;
-	new_inode.dataPtr[0] = indice_bloco_dados;
-	new_inode.dataPtr[1] = -1;
-	new_inode.singleIndPtr = -1;
-	new_inode.doubleIndPtr = -1;
-	new_inode.RefCounter = 1;
+    new_inode.blocksFileSize = 1;
+    new_inode.bytesFileSize = 0;
+    new_inode.dataPtr[0] = indice_bloco_dados;
+    new_inode.dataPtr[1] = -1;
+    new_inode.singleIndPtr = -1;
+    new_inode.doubleIndPtr = -1;
+    new_inode.RefCounter = 1;
 
-	created_file_record.inodeNumber = indice_inode;
+    created_file_record.inodeNumber = indice_inode;
 
-	/// Escrita do i-node no disco
-	int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
-	int setor_novo_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
-	int end_novo_inode = indice_inode % inodes_por_setor;
+    /// Escrita do i-node no disco
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+    int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+    int setor_novo_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+    int end_novo_inode = indice_inode % inodes_por_setor;
 
-	unsigned char buffer[TAM_SETOR];
-	if(read_sector(base + setor_novo_inode, buffer)){
-        return -1;
-	}
-	memcpy(&buffer[end_novo_inode], &new_inode, sizeof(struct t2fs_inode));
-	if(write_sector(base + setor_novo_inode, buffer)){
-        return -1;
-	}
-
-    if(setBitmap2(BITMAP_INODE, indice_inode, 1)){
+    unsigned char buffer[TAM_SETOR];
+    if(read_sector(base + setor_novo_inode, buffer))
+    {
         return -1;
     }
-    if(setBitmap2(BITMAP_DADOS, indice_bloco_dados, 1)){
+    memcpy(&buffer[end_novo_inode], &new_inode, sizeof(struct t2fs_inode));
+    if(write_sector(base + setor_novo_inode, buffer))
+    {
+        return -1;
+    }
+
+    if(setBitmap2(BITMAP_INODE, indice_inode, 1))
+    {
+        return -1;
+    }
+    if(setBitmap2(BITMAP_DADOS, indice_bloco_dados, 1))
+    {
         setBitmap2(BITMAP_INODE, indice_inode, 0);
         return -1;
     }
@@ -483,27 +556,33 @@ FILE2 create2 (char *filename) {
 /*-----------------------------------------------------------------------------
 Função:	Função usada para remover (apagar) um arquivo do disco.
 -----------------------------------------------------------------------------*/
-int delete2 (char *filename) {
+int delete2 (char *filename)
+{
 
-    if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
 
-    if(open_files_contem_arquivo(filename)){ // Caso o arquivo esteja aberto, retorna erro
+    if(open_files_contem_arquivo(filename))  // Caso o arquivo esteja aberto, retorna erro
+    {
         return -1;
     }
 
-    if(opendir2()){
+    if(opendir2())
+    {
         return -1;
     }
 
-    if (!contains(arquivos_diretorio, filename)){ // Caso não haja o arquivo no diretorio, retorna erro
+    if (!contains(arquivos_diretorio, filename))  // Caso não haja o arquivo no diretorio, retorna erro
+    {
         return -1;
     }
 
 
     struct t2fs_record registro;
-    if(get_element(arquivos_diretorio, filename, &registro)){
+    if(get_element(arquivos_diretorio, filename, &registro))
+    {
         return -1;
     }
 
@@ -515,19 +594,22 @@ int delete2 (char *filename) {
     struct t2fs_inode inode;
 
     int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
-	int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
-	int end_inode = indice_inode % inodes_por_setor;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+    int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+    int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+    int end_inode = indice_inode % inodes_por_setor;
 
-	if(read_sector(base + setor_inode, buffer)){
+    if(read_sector(base + setor_inode, buffer))
+    {
         return -1;
-	}
-	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+    }
+    memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
 
-	// Se houver hardlinks, apenas decrementa o contator e deleta o registro
-	if(inode.RefCounter > 1){
-        if(closedir2()){ // Fecha o diretorio
+    // Se houver hardlinks, apenas decrementa o contator e deleta o registro
+    if(inode.RefCounter > 1)
+    {
+        if(closedir2())  // Fecha o diretorio
+        {
             return -1;
         }
 
@@ -535,14 +617,17 @@ int delete2 (char *filename) {
         arquivos_diretorio = delete_element(arquivos_diretorio, filename);
 
         return 0;
-	}
+    }
 
     int qtd_blocos = inode.blocksFileSize;
     int blocos_liberados = 0;
 
-    for(i=0; i<2; i++){  // Indica blocos apontados diretamente como livres
-        if(inode.dataPtr[i] != -1){
-            if(setBitmap2(BITMAP_DADOS, inode.dataPtr[i], 0)){
+    for(i=0; i<2; i++)   // Indica blocos apontados diretamente como livres
+    {
+        if(inode.dataPtr[i] != -1)
+        {
+            if(setBitmap2(BITMAP_DADOS, inode.dataPtr[i], 0))
+            {
                 return -1;
             }
             blocos_liberados ++;
@@ -550,23 +635,28 @@ int delete2 (char *filename) {
     }
 
     int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
-    if(blocos_liberados != qtd_blocos){ // APRESENTA PONTEIRO DE INDIRECAO SIMPLES
+    if(blocos_liberados != qtd_blocos)  // APRESENTA PONTEIRO DE INDIRECAO SIMPLES
+    {
         int indice_bloco_indice = inode.singleIndPtr;
         int setor_inicio_bloco = indice_bloco_indice * superbloco_montado.blockSize; //Localizacao do bloco de ind simples
 
         i=0;
         // Para todo setor do bloco de ind simples
-        while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos){
-            if(read_sector(base + setor_inicio_bloco + i, buffer)){ // Le o setor
+        while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos)
+        {
+            if(read_sector(base + setor_inicio_bloco + i, buffer))  // Le o setor
+            {
                 return -1;
             }
 
             j=0;
             // Para todo ponteiro (para um bloco de dados) nesse setor
-            while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos){
+            while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos)
+            {
                 DWORD ponteiro;
                 memcpy(&ponteiro, &buffer[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
-                if(setBitmap2(BITMAP_DADOS, ponteiro, 0)){ // Libera o bloco de dados
+                if(setBitmap2(BITMAP_DADOS, ponteiro, 0))  // Libera o bloco de dados
+                {
                     return -1;
                 }
                 blocos_liberados++;
@@ -574,40 +664,49 @@ int delete2 (char *filename) {
             }
             i++;
         }
-        if(setBitmap2(BITMAP_DADOS, indice_bloco_indice, 0)){ // Libera o bloco de ind simples
+        if(setBitmap2(BITMAP_DADOS, indice_bloco_indice, 0))  // Libera o bloco de ind simples
+        {
             return -1;
         }
     }
 
-    if(blocos_liberados != qtd_blocos) { // APRESENTA BLOCOS DE INDIRECAO DUPLA
+    if(blocos_liberados != qtd_blocos)   // APRESENTA BLOCOS DE INDIRECAO DUPLA
+    {
         int bloco_indD = inode.doubleIndPtr;
         int setor_inicio_bloco_indD = bloco_indD * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
 
         k=0;
         // Para todo setor no bloco de ind dupla
-        while(k<superbloco_montado.blockSize && blocos_liberados!=qtd_blocos){
-            if(read_sector(base + setor_inicio_bloco_indD + k, buffer)){ // Le o setor
+        while(k<superbloco_montado.blockSize && blocos_liberados!=qtd_blocos)
+        {
+            if(read_sector(base + setor_inicio_bloco_indD + k, buffer))  // Le o setor
+            {
                 return -1;
             }
             l = 0;
             // Para todo ponteiro (que aponta para um bloco de ind simples) nesse setor
-            while(i<qtd_ponteiros_por_setor && blocos_liberados!=qtd_blocos){
+            while(i<qtd_ponteiros_por_setor && blocos_liberados!=qtd_blocos)
+            {
                 DWORD pt1;
                 memcpy(&pt1, &buffer[sizeof(DWORD)*i], sizeof(DWORD)); // Le o ponteiro
                 int setor_inicio_bloco = pt1 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
 
                 i=0;
                 // Para todo setor no bloco de ind simples
-                while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos){
-                    if(read_sector(base + setor_inicio_bloco + i, buffer2)){ // Le o setor
+                while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos)
+                {
+                    if(read_sector(base + setor_inicio_bloco + i, buffer2))  // Le o setor
+                    {
                         return -1;
                     }
                     j=0;
                     // Para todo ponteiro (para um bloco de dados) nesse setor
-                    while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos){
+                    while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos)
+                    {
                         DWORD pt2;
                         memcpy(&pt2, &buffer2[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
-                        if(setBitmap2(BITMAP_DADOS, pt2, 0)){ // Libera o bloco de dados
+                        if(setBitmap2(BITMAP_DADOS, pt2, 0))  // Libera o bloco de dados
+                        {
                             return -1;
                         }
                         blocos_liberados++;
@@ -615,67 +714,78 @@ int delete2 (char *filename) {
                     }
                     i++;
                 }
-                if(setBitmap2(BITMAP_DADOS, pt1, 0)){ // Libera o bloco de ind simples
+                if(setBitmap2(BITMAP_DADOS, pt1, 0))  // Libera o bloco de ind simples
+                {
                     return -1;
                 }
                 l++;
             }
             k++;
         }
-        if(setBitmap2(BITMAP_DADOS, bloco_indD, 0)){ // Libera o bloco de ind dupla
+        if(setBitmap2(BITMAP_DADOS, bloco_indD, 0))  // Libera o bloco de ind dupla
+        {
             return -1;
         }
     }
 
     // Libera i-node
-    if(setBitmap2(BITMAP_INODE, indice_inode, 0)){
+    if(setBitmap2(BITMAP_INODE, indice_inode, 0))
+    {
         return -1;
     }
 
     // Deleta o arquivo da lista de arquivos do diretorio
     arquivos_diretorio = delete_element(arquivos_diretorio, filename);
 
-    if(closedir2()){
+    if(closedir2())
+    {
         return -1;
     }
 
-	return 0;
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função que abre um arquivo existente no disco.
 -----------------------------------------------------------------------------*/
-FILE2 open2 (char *filename) {
+FILE2 open2 (char *filename)
+{
 
-    if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
 
-    if(opendir2()){
+    if(opendir2())
+    {
         return -1;
     }
 
     // Pega o registro do arquivo. Se o arquivo nao existe no diretorio, retorna -1
     struct t2fs_record registro;
-    if(get_element(arquivos_diretorio, filename, &registro)){
+    if(get_element(arquivos_diretorio, filename, &registro))
+    {
         return -1;
     }
 
     // Procura posicao para inserir arquivo
     int pos_insercao_open_file = 0;
-    while ((open_files[pos_insercao_open_file].current_pointer >= 0) && (pos_insercao_open_file < MAX_OPEN_FILE)){
+    while ((open_files[pos_insercao_open_file].current_pointer >= 0) && (pos_insercao_open_file < MAX_OPEN_FILE))
+    {
         // Varre array de arquivos abertos para adicionar o novo arquivo a eles.
         pos_insercao_open_file++;
     }
 
-    if (pos_insercao_open_file >= 10){ // Retorna -1 caso já haja 10 ou mais arquivos abertos
+    if (pos_insercao_open_file >= 10)  // Retorna -1 caso já haja 10 ou mais arquivos abertos
+    {
         return -1;                      // Isso significa que não há espaço disponível para abrir arquivo
     }
 
 
     // Verifica se arquivo é um soft link
     char nome_arq_referenciado[MAX_FILE_NAME_SIZE];
-    if(registro.TypeVal == TYPEVAL_LINK){
+    if(registro.TypeVal == TYPEVAL_LINK)
+    {
 
         unsigned char buffer[TAM_SETOR];
 
@@ -689,7 +799,8 @@ FILE2 open2 (char *filename) {
         int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
         int end_inode = indice_inode % inodes_por_setor;
 
-        if(read_sector(base + setor_inode, buffer)){
+        if(read_sector(base + setor_inode, buffer))
+        {
             return -1;
         }
 
@@ -699,107 +810,119 @@ FILE2 open2 (char *filename) {
         // Bloco contendo o nome do arquivo referenciado
         int indice_bloco = inode.dataPtr[0];
         int setor_bloco = indice_bloco * superbloco_montado.blockSize;
-        if(read_sector(base + setor_bloco, buffer)){
+        if(read_sector(base + setor_bloco, buffer))
+        {
             return -1;
         }
 
         // Leitura do nome do arquivo referenciado
         memcpy(nome_arq_referenciado, buffer, MAX_FILE_NAME_SIZE);
 
-        if(!contains(arquivos_diretorio, nome_arq_referenciado)){
+        if(!contains(arquivos_diretorio, nome_arq_referenciado))
+        {
             return -1; // Arquivo referenciado inexistente
         }
     }
 
-    if(closedir2()){
+    if(closedir2())
+    {
         return -1;
     }
 
     /// File
     FILE_T2FS new_open_file;
     new_open_file.current_pointer = 0;
-    if(registro.TypeVal == TYPEVAL_LINK){
+    if(registro.TypeVal == TYPEVAL_LINK)
+    {
         strcpy(new_open_file.filename, nome_arq_referenciado);
     }
-    else{ // Arquivo regular
+    else  // Arquivo regular
+    {
         strcpy(new_open_file.filename, filename);
     }
 
     open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
 
-	return 0;
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
-int close2 (FILE2 handle) {
+int close2 (FILE2 handle)
+{
 
-    if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
 
     // handle: identificador de arquivo para fechar
 
-	// Caso arquivo já esteja marcado como fechado (current_pointer == -1)
-	if (open_files[handle].current_pointer < 0){ // (<= 0)??
+    // Caso arquivo já esteja marcado como fechado (current_pointer == -1)
+    if (open_files[handle].current_pointer < 0)  // (<= 0)??
+    {
         return -1;
-	}
+    }
 
-	open_files[handle].current_pointer = -1; // Marca arquivo como fechado (current_pointer == -1)
+    open_files[handle].current_pointer = -1; // Marca arquivo como fechado (current_pointer == -1)
 
-	return 0;
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para realizar a leitura de uma certa quantidade
 		de bytes (size) de um arquivo.
 -----------------------------------------------------------------------------*/
-int read2 (FILE2 handle, char *buffer, int size) {
+int read2 (FILE2 handle, char *buffer, int size)
+{
 
     // Se particao nao foi montada, se a quantidade de bytes para leitura for negativa ou se
     // o arquivo indicado por handle na open_files table tiver um current_pointer invalido,
     // retorna erro.
-	if(!tem_particao_montada || size < 0 || open_files[handle].current_pointer < 0){
+    if(!tem_particao_montada || size < 0 || open_files[handle].current_pointer < 0)
+    {
         return -1;
     }
 
-    if(opendir2()){
+    if(opendir2())
+    {
         return -1;
     }
 
     // Le registro do arquivo indicado por filename
     struct t2fs_record registro;
-    int setores_por_bloco = superbloco_montado.blockSize;
-
-    if(get_element(arquivos_diretorio, open_files[handle].filename, &registro)){
+    if(get_element(arquivos_diretorio, open_files[handle].filename, &registro))
+    {
         return -1;
     }
 
     // Calcula o indice do inode do arquivo indicado por filename
     int indice_inode = registro.inodeNumber;
     int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
-	int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
-	int end_inode = indice_inode % inodes_por_setor;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+    int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+    int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+    int end_inode = indice_inode % inodes_por_setor;
 
     int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
 
-	// Le inode do arquivo indicado por filename
+    // Le inode do arquivo indicado por filename
     struct t2fs_inode inode;
-	unsigned char buffer_inode[TAM_SETOR];
+    unsigned char buffer_inode[TAM_SETOR];
     unsigned char buffer_setor[TAM_SETOR];
-	if(read_sector(base + setor_inode, buffer_inode)){
+    if(read_sector(base + setor_inode, buffer_inode))
+    {
         return -1;
-	}
-	memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
+    }
+    memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
 
     unsigned int qtde_blocos_arquivo = inode.blocksFileSize;
     unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize;
 
     int sizeR = size;
-    if(inode.bytesFileSize - open_files[handle].current_pointer < size){
+    if(inode.bytesFileSize - open_files[handle].current_pointer < size)
+    {
         sizeR = inode.bytesFileSize - open_files[handle].current_pointer;
     }
 
@@ -811,28 +934,33 @@ int read2 (FILE2 handle, char *buffer, int size) {
     unsigned int bytes_read = 0;
     int ind_setor_dados, ind_byte_dados;
 
-    //Faz a leitura dos dados do primeiro ponteiro direto do inode
-    if(open_files[handle].current_pointer < bytes_por_bloco){
+    /// Faz a leitura dos dados do primeiro ponteiro direto do inode
+    if(open_files[handle].current_pointer < bytes_por_bloco && bytes_read < sizeR)
+    {
 
-        if(inode.dataPtr[0] != -1){
+        if(inode.dataPtr[0] != -1)
+        {
             // Calcula setor de inicio do bloco de dados do ponteiro direto
             int indice_bloco_direto_a = inode.dataPtr[0];
             int setor_inicio_direto_a = indice_bloco_direto_a * superbloco_montado.blockSize;
 
             ind_setor_dados = floor(ind_byte/TAM_SETOR);
 
-            while(ind_setor_dados < superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize){
+            while(ind_setor_dados < superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize)
+            {
                 // Le o setor do disco para buffer_setor
-                if(read_sector(base + setor_inicio_direto_a + ind_setor_dados, buffer_setor)){ // Le o setor
+                if(read_sector(base + setor_inicio_direto_a + ind_setor_dados, buffer_setor))  // Le o setor
+                {
                     return -1;
                 }
                 ind_byte = ind_byte%TAM_SETOR;
                 // Percorre o setor gravando byte a byte no buffer enquanto:
-                    // a) nao chegar ao final do setor
-                    // b) nao ultrapassar o tamanho maximo do arquivo
-                    // c) nao ultrapassar o request de bytes a serem lidos
+                // a) nao chegar ao final do setor
+                // b) nao ultrapassar o tamanho maximo do arquivo
+                // c) nao ultrapassar o request de bytes a serem lidos
 
-                while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < sizeR){
+                while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < sizeR)
+                {
                     memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
                     *(buffer + bytes_read) = valor_byte;
                     ind_byte++;
@@ -841,36 +969,43 @@ int read2 (FILE2 handle, char *buffer, int size) {
                 }
                 ind_setor_dados++;
 
-            ind_byte = 0; // Reseta indice do byte para entrar no proximo laco, caso se aplique
+                ind_byte = 0; // Reseta indice do byte para entrar no proximo laco, caso se aplique
             }
         }
-    }else{
+    }
+    else
+    {
         ind_byte -= bytes_por_bloco; // Caso nao entre no primeiro caso, subtrai tamanho do bloco em bytes da
-                                     // variavel de byte atual para preparar para proximo condicional
+        // variavel de byte atual para preparar para proximo condicional
     }
 
-    // Faz leitura do segundo bloco apontado por ponteiro direto do inode
-    if(open_files[handle].current_pointer < 2*bytes_por_bloco && bytes_read < sizeR){
-        if(inode.dataPtr[1] != -1){
+    /// Faz leitura do segundo bloco apontado por ponteiro direto do inode
+    if(open_files[handle].current_pointer < 2*bytes_por_bloco && bytes_read < sizeR)
+    {
+        if(inode.dataPtr[1] != -1)
+        {
             // Calcula setor de inicio do bloco de dados do ponteiro direto
             int indice_bloco_direto_b = inode.dataPtr[1];
             int setor_inicio_direto_b = indice_bloco_direto_b * superbloco_montado.blockSize;
 
             ind_setor_dados = floor(ind_byte/TAM_SETOR);
-            while(ind_setor_dados < superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize){
+            while(ind_setor_dados < superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize)
+            {
 
                 // Le o setor do disco para buffer_setor
-                if(read_sector(base + setor_inicio_direto_b, buffer_setor)){ // Le o setor
+                if(read_sector(base + setor_inicio_direto_b, buffer_setor))  // Le o setor
+                {
                     return -1;
                 }
                 ind_byte = ind_byte%TAM_SETOR;
 
                 // Percorre o setor gravando byte a byte no buffer enquanto:
-                    // a) nao chegar ao final do setor
-                    // b) nao ultrapassar o tamanho maximo do arquivo
-                    // c) nao ultrapassar o request de bytes a serem lido
+                // a) nao chegar ao final do setor
+                // b) nao ultrapassar o tamanho maximo do arquivo
+                // c) nao ultrapassar o request de bytes a serem lido
 
-                while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < sizeR){
+                while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < sizeR)
+                {
                     memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
                     *(buffer + bytes_read) = valor_byte;
                     ind_byte++;
@@ -881,18 +1016,21 @@ int read2 (FILE2 handle, char *buffer, int size) {
             }
             ind_byte = 0;
         }
-    }else{
+    }
+    else
+    {
         ind_byte -= bytes_por_bloco;
     }
 
-    // Leitura de dados por INDIREÇÃO SIMPLES
+    /// Leitura de dados por INDIREÇÃO SIMPLES
     unsigned char buffer_setor_indirecao[TAM_SETOR], buffer_setor_dados[TAM_SETOR];
     unsigned int i, j, k;
     unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
     unsigned indice_bloco_dados, setor_inicio_bloco_dados;
     DWORD ponteiro;
 
-    if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco){
+    if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco && bytes_read < sizeR)
+    {
         indice_bloco_indirecao = inode.singleIndPtr;
         setor_inicio_bloco_indirecao = indice_bloco_indirecao * superbloco_montado.blockSize; //Localizacao do bloco de ind simples
 
@@ -900,11 +1038,13 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
         i = setor_indirecao_comeca_leitura;
         // Para CADA SETOR do bloco de ind simples, enquanto nao ultrapassar:
-            // - tamanho do arquivo
-            // - request de bytes a serem lidos
-        while(i<superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize){
+        // - tamanho do arquivo
+        // - request de bytes a serem lidos
+        while(i<superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize)
+        {
             // Le i-esimo setor de ponteiros para buffer
-            if(read_sector(base + setor_inicio_bloco_indirecao + i, buffer_setor_indirecao)){
+            if(read_sector(base + setor_inicio_bloco_indirecao + i, buffer_setor_indirecao))
+            {
                 return -1;
             }
 
@@ -913,7 +1053,8 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
             j = ponteiro_comeca_leitura;
             // Para todo ponteiro (para um bloco de dados) nesse setor
-            while(j < qtd_ponteiros_por_setor && bytes_read < sizeR && bytes_read <inode.bytesFileSize){
+            while(j < qtd_ponteiros_por_setor && bytes_read < sizeR && bytes_read <inode.bytesFileSize)
+            {
 
                 memcpy(&ponteiro, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
 
@@ -925,9 +1066,11 @@ int read2 (FILE2 handle, char *buffer, int size) {
                 int setor_bloco_comeca_leitura = floor(ind_byte / TAM_SETOR);
                 k = setor_bloco_comeca_leitura;
 
-                while(k < superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize){
+                while(k < superbloco_montado.blockSize && bytes_read < sizeR && bytes_read < inode.bytesFileSize)
+                {
                     //Le setor para o buffer de dados
-                    if(read_sector(base + setor_inicio_bloco_dados + k, buffer_setor_dados)){
+                    if(read_sector(base + setor_inicio_bloco_dados + k, buffer_setor_dados))
+                    {
                         return -1;
                     }
 
@@ -939,8 +1082,9 @@ int read2 (FILE2 handle, char *buffer, int size) {
                     // Byte (dentro do setor) em que comeca a leitura
                     ind_byte = ind_byte % TAM_SETOR;
 
-                    while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < sizeR){
-                        memcpy(&valor_byte, &buffer_setor[ind_byte], 1);
+                    while(ind_byte < TAM_SETOR && open_files[handle].current_pointer < inode.bytesFileSize && bytes_read < sizeR)
+                    {
+                        memcpy(&valor_byte, &buffer_setor_dados[ind_byte], 1);
                         *(buffer + bytes_read) = valor_byte;
                         ind_byte++;
                         bytes_read++;
@@ -954,18 +1098,20 @@ int read2 (FILE2 handle, char *buffer, int size) {
             i++;
         }
     }
-    else{
+    else
+    {
         ind_byte -= (qtd_ponteiros_por_setor * superbloco_montado.blockSize * bytes_por_bloco);
     }
 
 
-    // Leitura de dados por INDIREÇÃO DUPLA
+    /// Leitura de dados por INDIREÇÃO DUPLA
     unsigned char buffer_setor_indirecao_dupla[TAM_SETOR];
     unsigned int indice_bloco_indirecao_dupla, setor_inicio_bloco_indirecao_dupla;
     int l, m;
 
     // Le dos blocos de indirecao dupla e atualiza current_pointer
-    if(open_files[handle].current_pointer < ((bytes_por_bloco/sizeof(DWORD))^2)*bytes_por_bloco){
+    if(open_files[handle].current_pointer < ((bytes_por_bloco/sizeof(DWORD))^2)*bytes_por_bloco && bytes_read < sizeR)
+    {
 
         int setor_inicio_bloco_indirecao_dupla = inode.doubleIndPtr * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
 
@@ -975,9 +1121,11 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
         k = setor_ind_dup_comeca_leitura;
         // Para todo setor no bloco de ind dupla
-        while(k < superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < sizeR){
+        while(k < superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < sizeR)
+        {
 
-            if(read_sector(base + setor_inicio_bloco_indirecao_dupla + k, buffer_setor_indirecao_dupla)){ // Le o setor
+            if(read_sector(base + setor_inicio_bloco_indirecao_dupla + k, buffer_setor_indirecao_dupla))  // Le o setor
+            {
                 return -1;
             }
 
@@ -987,7 +1135,8 @@ int read2 (FILE2 handle, char *buffer, int size) {
             l = ponteiro_ind_dupla_comeca_leitura;
 
             // Para todo ponteiro (que aponta para um bloco de ind simples) nesse setor
-            while(l < qtd_ponteiros_por_setor && bytes_read < inode.bytesFileSize && bytes_read < sizeR){
+            while(l < qtd_ponteiros_por_setor && bytes_read < inode.bytesFileSize && bytes_read < sizeR)
+            {
                 DWORD pt1;
                 memcpy(&pt1, &buffer_setor_indirecao_dupla[sizeof(DWORD)*l], sizeof(DWORD)); // Le o ponteiro
                 int setor_inicio_bloco = pt1 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
@@ -998,8 +1147,10 @@ int read2 (FILE2 handle, char *buffer, int size) {
                 i = setor_ind_simp_comeca_leitura;
 
                 // Para todo setor no bloco de ind simples
-                while(i<superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < sizeR){
-                    if(read_sector(base + setor_inicio_bloco + i, buffer_setor_indirecao)){ // Le o setor
+                while(i<superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < sizeR)
+                {
+                    if(read_sector(base + setor_inicio_bloco + i, buffer_setor_indirecao))  // Le o setor
+                    {
                         return -1;
                     }
 
@@ -1009,7 +1160,8 @@ int read2 (FILE2 handle, char *buffer, int size) {
                     j = ponteiro_ind_simp_comeca_leitura;
 
                     // Para todo ponteiro (para um bloco de dados) nesse setor
-                    while(j<qtd_ponteiros_por_setor && bytes_read < inode.bytesFileSize && bytes_read < sizeR){
+                    while(j<qtd_ponteiros_por_setor && bytes_read < inode.bytesFileSize && bytes_read < sizeR)
+                    {
                         DWORD pt2;
                         memcpy(&pt2, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
 
@@ -1020,14 +1172,17 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
                         m = setor_dados_comeca_leitura;
                         // Agora traz setores do bloco apontado pelo ponteiro pt2
-                        while(m<superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < sizeR){
-                            if(read_sector(base + setor_inicio_bloco_dados + m, buffer_setor_dados)){ // Le o setor
+                        while(m<superbloco_montado.blockSize && bytes_read < inode.bytesFileSize && bytes_read < sizeR)
+                        {
+                            if(read_sector(base + setor_inicio_bloco_dados + m, buffer_setor_dados))  // Le o setor
+                            {
                                 return -1;
                             }
 
                             ind_byte = ind_byte % TAM_SETOR;
 
-                            while(ind_byte < TAM_SETOR && bytes_read < inode.bytesFileSize && bytes_read < sizeR){
+                            while(ind_byte < TAM_SETOR && bytes_read < inode.bytesFileSize && bytes_read < sizeR)
+                            {
                                 memcpy(&valor_byte, &buffer_setor_dados[ind_byte], 1);
                                 *(buffer + bytes_read) = valor_byte;
                                 ind_byte++;
@@ -1046,11 +1201,12 @@ int read2 (FILE2 handle, char *buffer, int size) {
         }
     }
 
-    if(closedir2()){
+    if(closedir2())
+    {
         return -1;
     }
 
-	return bytes_read;
+    return bytes_read;
 }
 
 
@@ -1058,73 +1214,485 @@ int read2 (FILE2 handle, char *buffer, int size) {
 Função:	Função usada para realizar a escrita de uma certa quantidade
 		de bytes (size) de  um arquivo.
 -----------------------------------------------------------------------------*/
-int write2 (FILE2 handle, char *buffer, int size) {
+int write2 (FILE2 handle, char *buffer, int size)
+{
 
-	if(!tem_particao_montada){
+// Se particao nao foi montada, se a quantidade de bytes para escrita for negativa ou se
+    // o arquivo indicado por handle na open_files table tiver um current_pointer invalido,
+    // retorna erro.
+    if(!tem_particao_montada || size < 0 || open_files[handle].current_pointer < 0)
+    {
         return -1;
     }
-	return -1;
+
+    if(opendir2())
+    {
+        return -1;
+    }
+
+    // Le registro do arquivo indicado por filename
+    struct t2fs_record registro;
+    if(get_element(arquivos_diretorio, open_files[handle].filename, &registro))
+    {
+        return -1;
+    }
+
+    // Calcula o indice do inode do arquivo indicado por filename
+    int indice_inode = registro.inodeNumber;
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+    int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+    int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+    int end_inode = indice_inode % inodes_por_setor;
+
+    int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
+
+    // Le inode do arquivo indicado por filename
+    struct t2fs_inode inode;
+    unsigned char buffer_inode[TAM_SETOR];
+    unsigned char buffer_setor[TAM_SETOR];
+    if(read_sector(base + setor_inode, buffer_inode))
+    {
+        return -1;
+    }
+    memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
+
+    unsigned int qtde_blocos_arquivo = inode.blocksFileSize;
+    unsigned int qtde_bytes_arquivo = inode.bytesFileSize;
+    unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize;
+
+
+    // ind_byte: armazena o indice do byte atual para ser escrito do setor (para qualquer um dos blocos apontados pelo inode)
+    // valor_byte: variavel para armazenar byte lido do setor
+    // bytes_write: total de bytes escritos do arquivo
+    unsigned int ind_byte = open_files[handle].current_pointer;
+    unsigned char valor_byte;
+    unsigned int bytes_write= 0;
+    int ind_setor_dados, ind_byte_dados;
+
+    ///Caso a escrita seja no primeiro bloco direto
+    if(open_files[handle].current_pointer < bytes_por_bloco && bytes_write < size)
+    {
+        int indice_bloco_direto_a;
+        if(inode.dataPtr[0] > -1)
+        {
+            indice_bloco_direto_a = inode.dataPtr[0];
+        }
+        else
+        {
+            indice_bloco_direto_a = aloca_bloco();
+            inode.dataPtr[0] = indice_bloco_direto_a;
+            qtde_blocos_arquivo++;
+        }
+
+        // Calcula setor de inicio do bloco de dados do ponteiro direto
+        int setor_inicio_direto_a = indice_bloco_direto_a * superbloco_montado.blockSize;
+        ind_setor_dados = floor(ind_byte/TAM_SETOR);
+
+        while(ind_setor_dados < superbloco_montado.blockSize && bytes_write < size)
+        {
+            // Le o setor do disco para buffer_setor
+            if(read_sector(base + setor_inicio_direto_a + ind_setor_dados, buffer_setor))  // Le o setor
+            {
+                return -1;
+            }
+            ind_byte = ind_byte%TAM_SETOR;
+            // Percorre o buffer gravando byte a byte no buffer do setor enquanto:
+            // a) nao chegar ao final do setor
+            // b) nao ultrapassar o request de bytes a serem escritos
+
+            while(ind_byte < TAM_SETOR && bytes_write < size)
+            {
+                memcpy(buffer_setor+ind_byte, buffer+bytes_write, 1);
+                ind_byte++;
+                bytes_write++;
+                open_files[handle].current_pointer++;
+            }
+
+            if(write_sector(base + setor_inicio_direto_a + ind_setor_dados, buffer_setor))  // Escreve o setor
+            {
+                return -1;
+            }
+
+            ind_setor_dados++;
+            ind_byte = 0; // Reseta indice do byte para entrar no proximo laco, caso se aplique
+        }
+    }
+
+    else
+    {
+        ind_byte -= bytes_por_bloco; // Caso nao entre no primeiro caso, subtrai tamanho do bloco em bytes da
+        // variavel de byte atual para preparar para proximo condicional
+    }
+
+    /// Caso a escrita seja no segundo bloco direto
+    if(open_files[handle].current_pointer < 2*bytes_por_bloco && bytes_write < size)
+    {
+        int indice_bloco_direto_b;
+        if(inode.dataPtr[1] > -1)
+        {
+            indice_bloco_direto_b = inode.dataPtr[1];
+        }
+        else
+        {
+            indice_bloco_direto_b = aloca_bloco();
+            inode.dataPtr[1] = indice_bloco_direto_b;
+            qtde_blocos_arquivo++;
+        }
+
+        // Calcula setor de inicio do bloco de dados do ponteiro direto
+        int setor_inicio_direto_b = indice_bloco_direto_b * superbloco_montado.blockSize;
+        ind_setor_dados = floor(ind_byte/TAM_SETOR);
+        while(ind_setor_dados < superbloco_montado.blockSize && bytes_write < size)
+        {
+
+            // Le o setor do disco para buffer_setor
+            if(read_sector(base + setor_inicio_direto_b, buffer_setor))  // Le o setor
+            {
+                return -1;
+            }
+            ind_byte = ind_byte%TAM_SETOR;
+
+            // Percorre o buffer gravando byte a byte no buffer do setor enquanto:
+            // a) nao chegar ao final do setor
+            // b) nao ultrapassar o request de bytes a serem escritos
+
+            while(ind_byte < TAM_SETOR && bytes_write < size)
+            {
+                memcpy(buffer_setor+ind_byte, buffer+bytes_write, 1);
+                ind_byte++;
+                bytes_write++;
+                open_files[handle].current_pointer++;
+            }
+            ind_setor_dados++;
+            if(write_sector(base + setor_inicio_direto_b, buffer_setor))  // Escreve o setor
+            {
+                return -1;
+            }
+        }
+        ind_byte = 0;
+    }
+    else
+    {
+        ind_byte -= bytes_por_bloco;
+    }
+
+/// Escrita de dados por INDIREÇÃO SIMPLES
+    unsigned char buffer_setor_indirecao[TAM_SETOR], buffer_setor_dados[TAM_SETOR];
+    unsigned int i, j, k;
+    unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
+    unsigned indice_bloco_dados, setor_inicio_bloco_dados;
+    DWORD ponteiro;
+
+    if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco && bytes_write < size)
+    {
+        if(inode.singleIndPtr == -1){
+            indice_bloco_indirecao = aloca_bloco();
+            inode.singleIndPtr = indice_bloco_indirecao;
+        }
+        else{
+            indice_bloco_indirecao = inode.singleIndPtr;
+        }
+
+        setor_inicio_bloco_indirecao = indice_bloco_indirecao * superbloco_montado.blockSize; //Localizacao do bloco de ind simples
+        int setor_indirecao_comeca_escrita = floor(ind_byte / (qtd_ponteiros_por_setor * bytes_por_bloco));
+        i = setor_indirecao_comeca_escrita;
+
+        // Para CADA SETOR do bloco de ind simples, enquanto nao ultrapassar:
+            // - request de bytes a serem escritos
+        while(i<superbloco_montado.blockSize && bytes_write < size)
+        {
+            // Le i-esimo setor de ponteiros para buffer
+            if(read_sector(base + setor_inicio_bloco_indirecao + i, buffer_setor_indirecao))
+            {
+                return -1;
+            }
+
+            ind_byte = ind_byte % (qtd_ponteiros_por_setor * bytes_por_bloco);
+            int ponteiro_comeca_leitura = floor(ind_byte / bytes_por_bloco); // Indice do ponteiro (dentro do setor) em que comeca a leitura
+
+            j = ponteiro_comeca_leitura;
+            // Para todo ponteiro (para um bloco de dados) nesse setor
+            while(j < qtd_ponteiros_por_setor && bytes_write < size)
+            {
+                memcpy(&ponteiro, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+
+                if(ponteiro == 0){
+                    indice_bloco_dados = aloca_bloco();
+                    memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &indice_bloco_dados, sizeof(DWORD));
+                    qtde_blocos_arquivo++;
+                }
+                else{
+                    indice_bloco_dados = ponteiro;
+                }
+                // Calcula localizacao do bloco de dados apontado pelo j-esimo ponteiro
+
+                setor_inicio_bloco_dados = indice_bloco_dados * superbloco_montado.blockSize; //Localizacao do bloco de dados
+
+                ind_byte = ind_byte % bytes_por_bloco;
+                int setor_bloco_comeca_escrita = floor(ind_byte / TAM_SETOR);
+                k = setor_bloco_comeca_escrita;
+
+                while(k < superbloco_montado.blockSize && bytes_write < size)
+                {
+                    //Le setor para o buffer de dados
+                    if(read_sector(base + setor_inicio_bloco_dados + k, buffer_setor_dados))
+                    {
+                        return -1;
+                    }
+
+                    // Percorre o buffer gravando byte a byte no buffer do setor enquanto:
+                    // a) nao chegar ao final do setor
+                    // b) nao ultrapassar o request de bytes a serem escritos
+
+                    // Byte (dentro do setor) em que comeca a leitura
+                    ind_byte = ind_byte % TAM_SETOR;
+
+                    while(ind_byte < TAM_SETOR && bytes_write < size)
+                    {
+                        memcpy(buffer_setor_dados+ind_byte, buffer+bytes_write, 1);
+                        ind_byte++;
+                        bytes_write++;
+                        open_files[handle].current_pointer++;
+                    }
+                    if(write_sector(base + setor_inicio_bloco_dados + k, buffer_setor_dados))
+                    {
+                        return -1;
+                    }
+                    k++;
+                    ind_byte = 0;
+                }
+                j++;
+            }
+            // Escrita do setor para escrever os possiveis ponteiros criados
+            if(write_sector(base + setor_inicio_bloco_indirecao + i, buffer_setor_indirecao))
+            {
+                return -1;
+            }
+            i++;
+        }
+    }
+    else
+    {
+        ind_byte -= (qtd_ponteiros_por_setor * superbloco_montado.blockSize * bytes_por_bloco);
+    }
+
+
+/// Escrita de dados por INDIREÇÃO DUPLA
+    unsigned char buffer_setor_indirecao_dupla[TAM_SETOR];
+    unsigned int indice_bloco_indirecao_dupla, setor_inicio_bloco_indirecao_dupla;
+    int l, m;
+
+
+    if(open_files[handle].current_pointer < ((bytes_por_bloco/sizeof(DWORD))^2)*bytes_por_bloco && bytes_write < size)
+    {
+        if(inode.doubleIndPtr == -1){
+            inode.doubleIndPtr = aloca_bloco();
+        }
+        int setor_inicio_bloco_indirecao_dupla = inode.doubleIndPtr * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
+
+        // Quantidade total de bytes "contido"/"apontado" em um setor de indirecao dupla
+        int qtd_bytes_setor_ind_dupla = (qtd_ponteiros_por_setor * (qtd_ponteiros_por_setor * superbloco_montado.blockSize) * bytes_por_bloco);
+        int setor_ind_dup_comeca_escrita = floor(ind_byte / qtd_bytes_setor_ind_dupla);
+
+        k = setor_ind_dup_comeca_escrita;
+        // Para todo setor no bloco de ind dupla
+        while(k < superbloco_montado.blockSize && bytes_write < size)
+        {
+            if(read_sector(base + setor_inicio_bloco_indirecao_dupla + k, buffer_setor_indirecao_dupla))  // Le o setor
+            {
+                return -1;
+            }
+
+            ind_byte = ind_byte % qtd_bytes_setor_ind_dupla;
+            int ponteiro_ind_dupla_comeca_escrita = floor(ind_byte / (qtd_ponteiros_por_setor * superbloco_montado.blockSize * bytes_por_bloco));
+
+            l = ponteiro_ind_dupla_comeca_escrita;
+
+            // Para todo ponteiro (que aponta para um bloco de ind simples) nesse setor
+            while(l < qtd_ponteiros_por_setor && bytes_write < size)
+            {
+                DWORD pt1;
+                memcpy(&pt1, &buffer_setor_indirecao_dupla[sizeof(DWORD)*l], sizeof(DWORD)); // Le o ponteiro
+
+                if(pt1 == 0){
+                    pt1 = aloca_bloco();
+                    if(pt1 <= 0){
+                        return -1;
+                    }
+                    memcpy(&buffer_setor_indirecao_dupla[sizeof(DWORD)*l], &pt1, sizeof(DWORD));
+                }
+
+                int setor_inicio_bloco = pt1 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
+
+                ind_byte = ind_byte % (qtd_ponteiros_por_setor * superbloco_montado.blockSize * bytes_por_bloco);
+                int setor_ind_simp_comeca_escrita = ind_byte / (qtd_ponteiros_por_setor * bytes_por_bloco);
+
+                i = setor_ind_simp_comeca_escrita;
+
+                // Para todo setor no bloco de ind simples
+                while(i<superbloco_montado.blockSize && bytes_write < size)
+                {
+                    if(read_sector(base + setor_inicio_bloco + i, buffer_setor_indirecao))  // Le o setor
+                    {
+                        return -1;
+                    }
+
+                    ind_byte = ind_byte % (qtd_ponteiros_por_setor * bytes_por_bloco);
+                    int ponteiro_ind_simp_comeca_escrita = floor(ind_byte / bytes_por_bloco);
+
+                    j = ponteiro_ind_simp_comeca_escrita;
+
+                    // Para todo ponteiro (para um bloco de dados) nesse setor
+                    while(j<qtd_ponteiros_por_setor && bytes_write < size)
+                    {
+                        DWORD pt2;
+                        memcpy(&pt2, &buffer_setor_indirecao[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
+
+                        if(pt2 == 0){
+                            pt2 = aloca_bloco();
+                            if(pt2 <= 0){
+                                return -1;
+                            }
+                            memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &pt2, sizeof(DWORD)); // Escreve o ponteiro
+                            qtde_blocos_arquivo++;
+                        }
+
+                        setor_inicio_bloco_dados = pt2 * superbloco_montado.blockSize; // Localizacao do bloco de ind simples
+
+                        ind_byte = ind_byte % bytes_por_bloco;
+                        int setor_dados_comeca_escrita = floor(ind_byte / TAM_SETOR);
+
+                        m = setor_dados_comeca_escrita;
+                        // Agora traz setores do bloco apontado pelo ponteiro pt2
+                        while(m<superbloco_montado.blockSize && bytes_write < size)
+                        {
+                            if(read_sector(base + setor_inicio_bloco_dados + m, buffer_setor_dados))  // Le o setor
+                            {
+                                return -1;
+                            }
+
+                            ind_byte = ind_byte % TAM_SETOR;
+
+                            while(ind_byte < TAM_SETOR && bytes_write < size)
+                            {
+                                memcpy(buffer_setor_dados+ind_byte, buffer+bytes_write, 1);
+                                ind_byte++;
+                                bytes_write++;
+                                open_files[handle].current_pointer++;
+                            }
+                            m++;
+                        }
+                        j++;
+                    }
+                    if(write_sector(base + setor_inicio_bloco + i, buffer_setor_indirecao))  // Le o setor
+                    {
+                        return -1;
+                    }
+                    i++;
+                }
+                l++;
+            }
+            if(write_sector(base + setor_inicio_bloco_indirecao_dupla + k, buffer_setor_indirecao_dupla))  // Le o setor
+            {
+                return -1;
+            }
+            k++;
+        }
+    }
+
+    /// Escrita do inode (possivelmente) atualizado
+    inode.blocksFileSize = qtde_blocos_arquivo;
+    if(open_files[handle].current_pointer > inode.bytesFileSize){
+        inode.bytesFileSize = open_files[handle].current_pointer;
+    }
+
+    memcpy(&buffer_inode[end_inode], &inode, sizeof(struct t2fs_inode));
+    if(write_sector(base + setor_inode, buffer_inode))
+    {
+        return -1;
+    }
+
+    if(closedir2())
+    {
+        return -1;
+    }
+
+    return bytes_write;
 }
+
 
 /*-----------------------------------------------------------------------------
 Função:	Função que abre um diretório existente no disco.
 -----------------------------------------------------------------------------*/
-int opendir2 (void) {
+int opendir2 (void)
+{
 
-	if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
-	return -1;
+    return -1;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para ler as entradas de um diretório.
 -----------------------------------------------------------------------------*/
-int readdir2 (DIRENT2 *dentry) {
+int readdir2 (DIRENT2 *dentry)
+{
 
-	if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
-	return -1;
+    return -1;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para fechar um diretório.
 -----------------------------------------------------------------------------*/
-int closedir2 (void) {
+int closedir2 (void)
+{
 
-	if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
-	return -1;
+    return -1;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para criar um caminho alternativo (softlink)
 -----------------------------------------------------------------------------*/
-int sln2 (char *linkname, char *filename) {
+int sln2 (char *linkname, char *filename)
+{
 
-	if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
 
-    if(opendir2()){
+    if(opendir2())
+    {
         return -1;
     }
 
     // Verifica se ja nao existe um arquivo com mesmo nome que o link
-    if(contains(arquivos_diretorio, linkname)){
+    if(contains(arquivos_diretorio, linkname))
+    {
         return -1;
     }
 
     // Verifica se o arquivo referenciado existe
-    if(!contains(arquivos_diretorio, filename)){
+    if(!contains(arquivos_diretorio, filename))
+    {
         return -1;
     }
 
     // Aloca um bloco de dados que vai conter o nome do arquivo referenciado
     int indice_bloco = aloca_bloco();
-    if(indice_bloco <= 0){
+    if(indice_bloco <= 0)
+    {
         return -1;
     }
 
@@ -1133,14 +1701,16 @@ int sln2 (char *linkname, char *filename) {
 
     // Escreve o bloco de dados no disco
     int setor_inicio_bloco = indice_bloco * superbloco_montado.blockSize;
-    if(write_sector(base + setor_inicio_bloco, buffer)){
+    if(write_sector(base + setor_inicio_bloco, buffer))
+    {
         return -1;
     }
 
     /// T2FS Record
     struct t2fs_record registro;
     registro.TypeVal = TYPEVAL_LINK;
-    if (strlen(linkname) > 50){ // Caso o nome passado como parametro seja maior que o tamanho máximo
+    if (strlen(linkname) > 50)  // Caso o nome passado como parametro seja maior que o tamanho máximo
+    {
         return -1;              //   do campo `name` para registro.
     }
     strcpy(registro.name, linkname);
@@ -1148,41 +1718,46 @@ int sln2 (char *linkname, char *filename) {
 
     // Selecao de um i-node para o arquivo
     int indice_inode;
-    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0){ // Se retorno da funcao for negativo, deu erro
-            return -1;                                        // Se for 0, nao ha blocos livres
+    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0)  // Se retorno da funcao for negativo, deu erro
+    {
+        return -1;                                        // Se for 0, nao ha blocos livres
     }
 
     /// inicializacao i-node
     struct t2fs_inode inode;
-	inode.blocksFileSize = 1;
-	inode.bytesFileSize = sizeof(filename);
-	inode.dataPtr[0] = indice_bloco;
-	inode.dataPtr[1] = -1;
-	inode.singleIndPtr = -1;
-	inode.doubleIndPtr = -1;
-	inode.RefCounter = 1;
+    inode.blocksFileSize = 1;
+    inode.bytesFileSize = sizeof(filename);
+    inode.dataPtr[0] = indice_bloco;
+    inode.dataPtr[1] = -1;
+    inode.singleIndPtr = -1;
+    inode.doubleIndPtr = -1;
+    inode.RefCounter = 1;
 
-	registro.inodeNumber = indice_inode;
+    registro.inodeNumber = indice_inode;
 
-	/// Escrita do i-node no disco
-	int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
-	int setor_novo_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
-	int end_novo_inode = indice_inode % inodes_por_setor;
+    /// Escrita do i-node no disco
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+    int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+    int setor_novo_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+    int end_novo_inode = indice_inode % inodes_por_setor;
 
-	if(read_sector(base + setor_novo_inode, buffer)){
-        return -1;
-	}
-	memcpy(&buffer[end_novo_inode], &inode, sizeof(struct t2fs_inode));
-	if(write_sector(base + setor_novo_inode, buffer)){
-        return -1;
-	}
-
-    if(setBitmap2(BITMAP_INODE, indice_inode, 1)){
+    if(read_sector(base + setor_novo_inode, buffer))
+    {
         return -1;
     }
-    if(setBitmap2(BITMAP_DADOS, indice_bloco, 1)){
+    memcpy(&buffer[end_novo_inode], &inode, sizeof(struct t2fs_inode));
+    if(write_sector(base + setor_novo_inode, buffer))
+    {
+        return -1;
+    }
+
+    if(setBitmap2(BITMAP_INODE, indice_inode, 1))
+    {
+        return -1;
+    }
+    if(setBitmap2(BITMAP_DADOS, indice_bloco, 1))
+    {
         setBitmap2(BITMAP_INODE, indice_inode, 0);
         return -1;
     }
@@ -1190,74 +1765,84 @@ int sln2 (char *linkname, char *filename) {
     // Adiciona registro na lista de registros
     arquivos_diretorio = insert_element(arquivos_diretorio, registro);
 
-    if(closedir2()){
+    if(closedir2())
+    {
         return -1;
     }
-	return 0;
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------
 Função:	Função usada para criar um caminho alternativo (hardlink)
 -----------------------------------------------------------------------------*/
-int hln2(char *linkname, char *filename) {
+int hln2(char *linkname, char *filename)
+{
 
-	if(!tem_particao_montada){
+    if(!tem_particao_montada)
+    {
         return -1;
     }
 
-    if(opendir2()){
+    if(opendir2())
+    {
         return -1;
     }
 
     // Verifica se ja nao existe um arquivo com mesmo nome que o link
-    if(contains(arquivos_diretorio, linkname)){
+    if(contains(arquivos_diretorio, linkname))
+    {
         return -1;
     }
 
     // Verifica se o arquivo referenciado existe
-    if(!contains(arquivos_diretorio, filename)){
+    if(!contains(arquivos_diretorio, filename))
+    {
         return -1;
     }
 
     /// T2FS Record
     struct t2fs_record registro_hardlink;
     registro_hardlink.TypeVal = TYPEVAL_REGULAR; // Hard link eh um registro regular
-    if (strlen(linkname) > 50){ // Caso o nome passado como parametro seja maior que o tamanho máximo
+    if (strlen(linkname) > 50)  // Caso o nome passado como parametro seja maior que o tamanho máximo
+    {
         return -1;              //   do campo `name` para registro.
     }
     strcpy(registro_hardlink.name, linkname);
 
     // Identificacao do i-node do arquivo "original"
     struct t2fs_record registro;
-    if(get_element(arquivos_diretorio, filename, &registro)){
+    if(get_element(arquivos_diretorio, filename, &registro))
+    {
         return -1;
     }
     int indice_inode = registro.inodeNumber;
     struct t2fs_inode inode;
 
     // Leitura do i-node no disco
-	int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-	int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-	int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
-	int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
-	int end_inode = indice_inode % inodes_por_setor;
+    int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+    int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+    int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+    int setor_inode = setor_inicio_area_inodes + (indice_inode / inodes_por_setor);
+    int end_inode = indice_inode % inodes_por_setor;
 
-	unsigned char buffer[TAM_SETOR];
-	if(read_sector(base + setor_inode, buffer)){
+    unsigned char buffer[TAM_SETOR];
+    if(read_sector(base + setor_inode, buffer))
+    {
         return -1;
-	}
-	memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+    }
+    memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
 
-	// Incrementa contador de referencia. Inode do hardlink eh o mesmo que o inode do arquivo referenciado
-	inode.RefCounter++;
-	registro_hardlink.inodeNumber = indice_inode;
-	arquivos_diretorio = insert_element(arquivos_diretorio, registro_hardlink);
+    // Incrementa contador de referencia. Inode do hardlink eh o mesmo que o inode do arquivo referenciado
+    inode.RefCounter++;
+    registro_hardlink.inodeNumber = indice_inode;
+    arquivos_diretorio = insert_element(arquivos_diretorio, registro_hardlink);
 
-    if(closedir2()){
-       return -1;
+    if(closedir2())
+    {
+        return -1;
     }
 
-	return 0;
+    return 0;
 }
 
 
