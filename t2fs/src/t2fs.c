@@ -472,16 +472,26 @@ FILE2 create2 (char *filename)
         return -1;
     }
 
+    if(opendir2()){
+        return -1;
+    }
+
     // Procurar se há algum arquivo no disco com mesmo nome.
     // Caso ja existir, remove o conteudo, assumindo tamanho de zero bytes. (Deleta o arquivo e continua a criacao)
     if(contains(arquivos_diretorio, filename))
     {
+        if(closedir2){
+            return -1;
+        }
         if(delete2(filename) != 0)
         {
             return -1;
         }
     }
 
+    if(closedir2){
+        return -1;
+    }
 
     /// T2FS Record
     struct t2fs_record created_file_record;
@@ -548,7 +558,13 @@ FILE2 create2 (char *filename)
     }
 
     // Adiciona registro na lista de registros
+    if(opendir2()){
+        return -1;
+    }
     arquivos_diretorio = insert_element(arquivos_diretorio, created_file_record);
+    if(closedir2()){
+        return -1;
+    }
 
     return open2(filename);
 }
@@ -608,13 +624,13 @@ int delete2 (char *filename)
     // Se houver hardlinks, apenas decrementa o contator e deleta o registro
     if(inode.RefCounter > 1)
     {
+        inode.RefCounter--;
+        arquivos_diretorio = delete_element(arquivos_diretorio, filename);
+
         if(closedir2())  // Fecha o diretorio
         {
             return -1;
         }
-
-        inode.RefCounter--;
-        arquivos_diretorio = delete_element(arquivos_diretorio, filename);
 
         return 0;
     }
