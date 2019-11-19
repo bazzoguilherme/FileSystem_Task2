@@ -1258,17 +1258,14 @@ int write2 (FILE2 handle, char *buffer, int size)
     memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
 
     unsigned int qtde_blocos_arquivo = inode.blocksFileSize;
-    unsigned int qtde_bytes_arquivo = inode.bytesFileSize;
     unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize;
 
 
     // ind_byte: armazena o indice do byte atual para ser escrito do setor (para qualquer um dos blocos apontados pelo inode)
-    // valor_byte: variavel para armazenar byte lido do setor
     // bytes_write: total de bytes escritos do arquivo
     unsigned int ind_byte = open_files[handle].current_pointer;
-    unsigned char valor_byte;
     unsigned int bytes_write= 0;
-    int ind_setor_dados, ind_byte_dados;
+    int ind_setor_dados;
 
     ///Caso a escrita seja no primeiro bloco direto
     if(open_files[handle].current_pointer < bytes_por_bloco && bytes_write < size)
