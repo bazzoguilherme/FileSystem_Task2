@@ -10,10 +10,11 @@ void lista_dir(){
 
 	DIRENT2* d = (DIRENT2*) malloc (sizeof(DIRENT2*));
 	if (readdir2(d) == -1){
-		printf("Erro inicial\n");
+		printf("Sem arquivos\n");
 	} else {
-//	while(readdir2(d) != -1){
-		printf("file: %s\n", d->name);
+        do {
+            printf("~> file: %s\n", d->name);
+        }while(readdir2(d) != -1);
 	}
 	if (closedir2() == -1)
 		printf("Erro closedir lista_dir\n");
@@ -46,7 +47,7 @@ int main(){
 
 	printf("Buffers padroes (ivan) inicializados\n");
 	getchar();
-	
+
 	printf("\n -- FORMAT\n");
     if (format2(0, 1) == -1){
 		printf("Erro FORMAT\n");
@@ -63,7 +64,7 @@ int main(){
 	printf("mount done\n");
 	printf("Listagens e criacao de arquivos\n");
 	getchar();
-	
+
 	lista_dir();
 	getchar();
 	printf("--Cria arq 1\n");
@@ -87,7 +88,7 @@ int main(){
 	getchar();
 
     hln2("linktop.txt", "Senhas.txt");
-    
+
     //sln2("linktop.txt", "Senhas.txt");
 
     DIRENT2 de;
