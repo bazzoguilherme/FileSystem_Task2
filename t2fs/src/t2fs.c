@@ -1824,10 +1824,8 @@ int opendir2 (void)
         if(!tem_particao_montada)
         {
             return -1;
-            return -1;
         }
     }
-    return -1;
 
     if (diretorio_aberto)  // Caso diretorio ja esteja aberto, retorna erro
     {
