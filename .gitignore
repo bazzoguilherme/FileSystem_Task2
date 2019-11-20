@@ -3,3 +3,6 @@
 
 # Executable
 *.exe
+
+# Disco auxiliar
+t2fs_disk_aux.dat
