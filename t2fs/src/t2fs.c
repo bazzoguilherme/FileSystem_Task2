@@ -2015,7 +2015,7 @@ int closedir2 (void)
             ind_reg = 0;
             while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
             {
-                memcpy(buffer + registros_escritos*tam_registro, aux, tam_registro);
+                memcpy(buffer + registros_escritos*tam_registro, &aux->registro, tam_registro);
                 aux = aux->next;
                 registros_escritos++;
                 ind_reg++;
@@ -2056,7 +2056,7 @@ int closedir2 (void)
             ind_reg = 0;
             while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
             {
-                memcpy(buffer + ind_reg*tam_registro, aux, tam_registro);
+                memcpy(buffer + ind_reg*tam_registro, &aux->registro, tam_registro);
                 aux = aux->next;
                 registros_escritos++;
                 ind_reg++;
@@ -2135,7 +2135,7 @@ int closedir2 (void)
                     int ind_reg = 0;
                     while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
                     {
-                        memcpy(buffer + ind_reg*tam_registro, aux, tam_registro);
+                        memcpy(buffer + ind_reg*tam_registro, &aux->registro, tam_registro);
                         aux = aux->next;
                         registros_escritos++;
                         ind_reg++;
@@ -2240,7 +2240,7 @@ int closedir2 (void)
                             int ind_reg = 0;
                             while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
                             {
-                                memcpy(buffer + ind_reg*tam_registro, aux, tam_registro);
+                                memcpy(buffer + ind_reg*tam_registro, &aux->registro, tam_registro);
                                 aux = aux->next;
                                 registros_escritos++;
                                 ind_reg++;
