@@ -136,6 +136,7 @@ boolean contains(Linked_List* list, char* nome_registro_)
     Linked_List* aux = list;
     while (aux!=NULL)
     {
+        printf("arq1: %s X arq2: %s == %d\n", aux->registro.name, nome_registro_, strcmp(aux->registro.name, nome_registro_));
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
             return true;
@@ -208,7 +209,7 @@ int aloca_bloco()
 {
     int bloco;
     int i;
-    if((bloco = searchBitmap2(BITMAP_DADOS, 0)) <= 0)   // Se retorno da funcao for negativo, deu erro
+    if((bloco = searchBitmap2(BITMAP_DADOS, 0)) < 0)   // Se retorno da funcao for negativo, deu erro
     {
         return bloco;
     }
@@ -251,7 +252,7 @@ int format2(int partition, int sectors_per_block)
 {
     if (DEBUG_MODE){printf("> FORMAT\n");}
 
-    unsigned char buffer[256];
+    unsigned char buffer[TAM_SETOR] = {0};
     int i;
 
     if(read_sector(0, buffer))  // Le o MBR, localizado no primeiro setor
@@ -270,11 +271,9 @@ int format2(int partition, int sectors_per_block)
     int tam_setor = getDado(buffer, 2, 2);
     int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
     int setor_fim = getDado(buffer, 12 + 24*partition, 4);
-    int num_setores = setor_fim - setor_inicio;
+    int num_setores = setor_fim - setor_inicio + 1;
     int num_blocos = num_setores / sectors_per_block;
     int num_blocos_inodes = ceil(0.1 * num_blocos);
-
-    printf("n_setores: %d\nn_blocos: %d\n", num_setores, num_blocos);
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
     int num_inodes = num_blocos_inodes * tam_bloco / sizeof(struct t2fs_inode);
@@ -360,7 +359,7 @@ int format2(int partition, int sectors_per_block)
 
     /// Inicializacao do bloco de dados do diretorio raiz
     int bloco_raiz = aloca_bloco();
-    if(bloco_raiz <= 0)  // Se erro ou se nao ha um bloco livre, retorna erro
+    if(bloco_raiz <= -1)  // Se erro ou se nao ha um bloco livre, retorna erro
     {
         if (DEBUG_MODE){printf("**Bloco invalido para raiz**\n");}
         return -1;
@@ -395,6 +394,7 @@ int format2(int partition, int sectors_per_block)
         return -1;
     }
 
+    if (DEBUG_MODE){printf("> FORMAT end\n");}
     return 0;
 }
 
@@ -450,6 +450,7 @@ int mount(int partition)
         return -1;
     }
 
+    if (DEBUG_MODE){printf("> MOUNT end\n");}
     return 0;
 }
 
@@ -530,7 +531,7 @@ FILE2 create2 (char *filename)
 
     // Selecao de um bloco de dados para o arquivo
     int indice_bloco_dados = aloca_bloco();
-    if(indice_bloco_dados <= 0)     // Se retorno da funcao for negativo, deu erro
+    if(indice_bloco_dados <= -1)     // Se retorno da funcao for negativo, deu erro
     {
         if (DEBUG_MODE){printf("**Erro indice de dados alocado invalido**\n");}
         return -1;              // Se for 0, nao ha blocos livres
@@ -599,6 +600,7 @@ FILE2 create2 (char *filename)
         return -1;
     }
 
+    if (DEBUG_MODE){printf("> CREATE end - chamando open\n");}
     return open2(filename);
 }
 
@@ -926,6 +928,7 @@ FILE2 open2 (char *filename)
 
     open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
 
+    if (DEBUG_MODE){printf("> OPEN end\n");}
     return 0;
 }
 
@@ -934,7 +937,7 @@ Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
 int close2 (FILE2 handle)
 {
-    if (DEBUG_MODE){printf("> CLOSE **\n");}
+    if (DEBUG_MODE){printf("> CLOSE\n");}
     if(!tem_particao_montada)
     {
         return -1;
@@ -955,6 +958,7 @@ int close2 (FILE2 handle)
 
     open_files[handle].current_pointer = -1; // Marca arquivo como fechado (current_pointer == -1)
 
+    if (DEBUG_MODE){printf("> CLOSE\n");}
     return 0;
 }
 
@@ -1303,6 +1307,7 @@ int read2 (FILE2 handle, char *buffer, int size)
             k++;
         }
     }
+    if (DEBUG_MODE){printf("> READ end\n");}
     return bytes_read;
 }
 
@@ -1383,7 +1388,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         else
         {
             indice_bloco_direto_a = aloca_bloco();
-            if(indice_bloco_direto_a <= 0)
+            if(indice_bloco_direto_a <= -1)
             {
                 return bytes_write;
             }
@@ -1444,7 +1449,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         else
         {
             indice_bloco_direto_b = aloca_bloco();
-            if(indice_bloco_direto_b <= 0)
+            if(indice_bloco_direto_b <= -1)
             {
                 return bytes_write;
             }
@@ -1503,7 +1508,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         if(inode.singleIndPtr == -1)
         {
             indice_bloco_indirecao = aloca_bloco();
-            if(indice_bloco_indirecao <= 0)
+            if(indice_bloco_indirecao <= -1)
             {
                 return bytes_write;
             }
@@ -1541,7 +1546,7 @@ int write2 (FILE2 handle, char *buffer, int size)
                 if(ponteiro == 0)
                 {
                     indice_bloco_dados = aloca_bloco();
-                    if(indice_bloco_dados <= 0)
+                    if(indice_bloco_dados <= -1)
                     {
                         return bytes_write;
                     }
@@ -1617,7 +1622,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         if(inode.doubleIndPtr == -1)
         {
             inode.doubleIndPtr = aloca_bloco();
-            if(inode.doubleIndPtr <= 0)
+            if(inode.doubleIndPtr <= -1)
             {
                 inode.doubleIndPtr = -1;
                 return bytes_write;
@@ -1653,7 +1658,7 @@ int write2 (FILE2 handle, char *buffer, int size)
                 if(pt1 == 0)
                 {
                     pt1 = aloca_bloco();
-                    if(pt1 <= 0)
+                    if(pt1 <= -1)
                     {
                         return bytes_write;
                     }
@@ -1690,7 +1695,7 @@ int write2 (FILE2 handle, char *buffer, int size)
                         if(pt2 == 0)
                         {
                             pt2 = aloca_bloco();
-                            if(pt2 <= 0)
+                            if(pt2 <= -1)
                             {
                                 return bytes_write;
                             }
@@ -1786,6 +1791,7 @@ int carregaRegistrosDataPtr(DWORD blockNumber)
             memcpy(&registro, buffer + j * sizeof(struct t2fs_record), sizeof(struct t2fs_record));
             if(registro.TypeVal != 0x00)
             {
+                printf("&Arquivo achado: %s\n", registro.name);
                 arquivos_diretorio = insert_element(arquivos_diretorio, registro); // Adiciona registro em lista de arquivos abertos
             }
             else
@@ -1925,46 +1931,46 @@ int opendir2 (void)
 
     arquivos_diretorio = create_linked_list(); // Inicializa lista de arquivos do diretorio
 
-    unsigned char buffer[TAM_SETOR];
-    struct t2fs_inode inode;
+    unsigned char buffer[TAM_SETOR] = {0};
+    struct t2fs_inode* inode = (struct t2fs_inode*) malloc (sizeof(struct t2fs_inode));
 
     int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
     int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
     //int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
     int setor_inode = setor_inicio_area_inodes;
     int end_inode = 0;  // Diretorio raiz esta associado ao inode 0
-printf("open: %d", base + setor_inode);
+
     if(read_sector(base + setor_inode, buffer))
     {
         if (DEBUG_MODE){printf("**Erro leitura setor**\n");}
         return -1;
     }
-    memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+    memcpy(inode, &buffer[end_inode], sizeof(struct t2fs_inode));
 
 
     int i = 0;
     for(i=0; i<2; i++)   // Indica blocos apontados diretamente como livres
     {
-        if(inode.dataPtr[i] != -1)  // ponteiro invalido
+        if(inode->dataPtr[i] != -1)  // ponteiro invalido
         {
-            if (carregaRegistrosDataPtr(inode.dataPtr[i]) == -1)
+            if (carregaRegistrosDataPtr(inode->dataPtr[i]) == -1)
             {
                 if (DEBUG_MODE){printf("**Erro carregamento dados direos %d**\n", i);}
                 return -1;
             }
         }
     }
-    if (inode.singleIndPtr != -1)  // ponteiro invalido
+    if (inode->singleIndPtr != -1)  // ponteiro invalido
     {
-        if (carregaRegistrosSingleIndPtr(inode.singleIndPtr) == -1)
+        if (carregaRegistrosSingleIndPtr(inode->singleIndPtr) == -1)
         {
             if (DEBUG_MODE){printf("**Erro blocos ind simples**\n");}
             return -1;
         }
     }
-    if (inode.doubleIndPtr != -1)  // ponteiro invalido
+    if (inode->doubleIndPtr != -1)  // ponteiro invalido
     {
-        if (carregaRegistrosDoubleIndPtr(inode.doubleIndPtr) == -1)
+        if (carregaRegistrosDoubleIndPtr(inode->doubleIndPtr) == -1)
         {
             if (DEBUG_MODE){printf("**Erro blocos ind duplos**\n");}
             return -1;
@@ -1975,6 +1981,7 @@ printf("open: %d", base + setor_inode);
 
     diretorio_aberto = true;
 
+    if (DEBUG_MODE){printf("> OPENDIR end\n");}
     return 0;
 }
 
@@ -2006,10 +2013,10 @@ int readdir2 (DIRENT2 *dentry)
     struct t2fs_record registro = current_dentry->registro;
     //printf("inodenum: %d\n", registro.inodeNumber);
 
-    DIRENT2 entradaDir;
+    DIRENT2* entradaDir = (DIRENT2*) malloc (sizeof(DIRENT2));
 
-    memcpy(entradaDir.name, registro.name, 51);
-    entradaDir.fileType = registro.TypeVal;
+    memcpy(entradaDir->name, registro.name, 51);
+    entradaDir->fileType = registro.TypeVal;
 
     // Procura por inode para adicionar valor de tamanho em dentry
     unsigned char buff[TAM_SETOR] = {0};
@@ -2024,11 +2031,12 @@ printf("terminou_ler_setor\n");
     struct t2fs_inode inode;
     memcpy(&inode, &buff[end_inode], sizeof(struct t2fs_inode));
 
-    entradaDir.fileSize = inode.bytesFileSize;
+    entradaDir->fileSize = inode.bytesFileSize;
 
-    *dentry = entradaDir;
+    *dentry = *entradaDir;
     current_dentry = current_dentry->next;
 
+    if (DEBUG_MODE){printf("> READDIR end\n");}
     return 0;
 }
 
@@ -2060,7 +2068,7 @@ int closedir2 (void)
 
     // Calcula o setor de inicio da area de inodes
     int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-printf("close: %d\n", base + (inicio_area_inodes * superbloco_montado.blockSize));
+
     // Le inode do diretorio raiz (i-node 0)
     struct t2fs_inode inode;
     if(read_sector(base + (inicio_area_inodes * superbloco_montado.blockSize), buffer_inode))
@@ -2068,7 +2076,6 @@ printf("close: %d\n", base + (inicio_area_inodes * superbloco_montado.blockSize)
         if (DEBUG_MODE){printf("**Erro leitura setor - inode raiz**\n");}
         return -1;
     }
-printf("3\n");
     memcpy(&inode, buffer_inode, sizeof(struct t2fs_inode));
     if (DEBUG_MODE){printf(">> Insere tipo invalido\n");}
     // Adiciona um registro invalido ao fim da lista, para usar como criterio de parada na opendir2
@@ -2087,10 +2094,12 @@ printf("3\n");
         aux = aux->next;
     }
 
+    printf("<> Quant arquivos: %d\n", qtd_registros);
+
     aux = arquivos_diretorio;
 
     /// Escrita no primeiro bloco direto
-    if(registros_escritos != qtd_registros)
+    if(registros_escritos < qtd_registros)
     {
         if (DEBUG_MODE){printf("*Direto A*\n");}
         int indice_bloco_direto_a;
@@ -2098,7 +2107,7 @@ printf("3\n");
         if(inode.dataPtr[0] == -1)
         {
             indice_bloco_direto_a = aloca_bloco();
-            if(indice_bloco_direto_a <= 0)
+            if(indice_bloco_direto_a <= -1)
             {
                 if (DEBUG_MODE){printf("**Erro indice bloco direto a invalido**\n");}
                 return -1;
@@ -2118,6 +2127,7 @@ printf("3\n");
             while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
             {
                 memcpy(buffer + registros_escritos*tam_registro, &aux->registro, tam_registro);
+                printf("\t--Arquivo escrito: %s\n", aux->registro.name);
                 aux = aux->next;
                 registros_escritos++;
                 ind_reg++;
@@ -2134,7 +2144,7 @@ printf("3\n");
     }
 
     /// Escrita no segundo bloco direto
-    if(registros_escritos != qtd_registros)
+    if(registros_escritos < qtd_registros)
     {
         if (DEBUG_MODE){printf("*Direto B*\n");}
         int indice_bloco_direto_b;
@@ -2142,7 +2152,7 @@ printf("3\n");
         if(inode.dataPtr[1] == -1)
         {
             indice_bloco_direto_b = aloca_bloco();
-            if(indice_bloco_direto_b <= 0)
+            if(indice_bloco_direto_b <= -1)
             {
                 if (DEBUG_MODE){printf("**Erro indice bloco direto b invalido**\n");}
                 return -1;
@@ -2185,14 +2195,14 @@ printf("3\n");
     unsigned indice_bloco_dados, setor_inicio_bloco_dados;
     DWORD ponteiro;
 
-    if(registros_escritos != qtd_registros)
+    if(registros_escritos < qtd_registros)
     {
         if (DEBUG_MODE){printf("*Ind Simples*\n");}
 
         if(inode.singleIndPtr == -1)
         {
             indice_bloco_indirecao = aloca_bloco();
-            if(indice_bloco_indirecao <= 0)
+            if(indice_bloco_indirecao <= -1)
             {
                 if (DEBUG_MODE){printf("**Erro bloco indirecao simples**\n");}
                 return -1;
@@ -2225,7 +2235,7 @@ printf("3\n");
                 if(ponteiro == 0)
                 {
                     indice_bloco_dados = aloca_bloco();
-                    if(indice_bloco_dados <= 0)
+                    if(indice_bloco_dados <= -1)
                     {
                         if (DEBUG_MODE){printf("**Erro indice bloco de dados indSimples**\n");}
                         return -1;
@@ -2282,7 +2292,7 @@ printf("3\n");
         if(inode.doubleIndPtr == -1)
         {
             inode.doubleIndPtr = aloca_bloco();
-            if(inode.doubleIndPtr <= 0)
+            if(inode.doubleIndPtr <= -1)
             {
                 if (DEBUG_MODE){printf("**Erro indice bloco indDupla**\n");}
                 inode.doubleIndPtr = -1;
@@ -2311,7 +2321,7 @@ printf("3\n");
                 if(pt1 == 0)
                 {
                     pt1 = aloca_bloco();
-                    if(pt1 <= 0)
+                    if(pt1 <= -1)
                     {
                         if (DEBUG_MODE){printf("**Erro alocacao bloco 1**\n");}
                         return -1;
@@ -2341,7 +2351,7 @@ printf("3\n");
                         if(pt2 == 0)
                         {
                             pt2 = aloca_bloco();
-                            if(pt2 <= 0)
+                            if(pt2 <= -1)
                             {
                                 if (DEBUG_MODE){printf("**Erro alocacao bloco 2**\n");}
                                 return -1;
@@ -2413,6 +2423,7 @@ printf("3\n");
 
     diretorio_aberto = false;
 
+    if (DEBUG_MODE){printf("> CLOSE end\n");}
     return 0;
 }
 
@@ -2448,7 +2459,7 @@ int sln2 (char *linkname, char *filename)
 
     // Aloca um bloco de dados que vai conter o nome do arquivo referenciado
     int indice_bloco = aloca_bloco();
-    if(indice_bloco <= 0)
+    if(indice_bloco <= -1)
     {
         closedir2();
         return -1;

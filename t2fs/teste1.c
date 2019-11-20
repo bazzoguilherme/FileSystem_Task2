@@ -4,20 +4,20 @@
 #include "include/t2fs.h"
 
 void lista_dir(){
-	printf("Abre para listar\n");
+	//printf("Abre para listar\n");
 	if (opendir2() == -1)
-		printf("Erro opendir lista_dir\n");
+		printf("t1: Erro opendir lista_dir\n");
 
 	DIRENT2* d = (DIRENT2*) malloc (sizeof(DIRENT2*));
 	if (readdir2(d) == -1){
-		printf("Sem arquivos\n");
+		printf("t1: Sem arquivos\n");
 	} else {
         do {
             printf("~> file: %s\n", d->name);
         }while(readdir2(d) != -1);
 	}
 	if (closedir2() == -1)
-		printf("Erro closedir lista_dir\n");
+		printf("t1: Erro closedir lista_dir\n");
 }
 
 int main(){
@@ -26,7 +26,7 @@ int main(){
     char buffer3[20000] = {0};
     int i;
 
-	printf("Inicio..\n\n");
+	printf("t1: Inicio..\n\n");
 	getchar();
 
     strcpy(buffer, "Batatinha quando nasce. Texto muito grande para tentar encher o coisa (bloco de indices duplo)\n");
@@ -45,34 +45,42 @@ int main(){
 
     int szb = strlen(buffer) + 1;
 
-	printf("Buffers padroes (ivan) inicializados\n");
+	printf("t1: Buffers padroes (ivan) inicializados\n");
 	getchar();
 
-	printf("\n -- FORMAT\n");
+	printf("\n --t1:  FORMAT\n");
     if (format2(0, 1) == -1){
-		printf("Erro FORMAT\n");
+		printf("t1: Erro FORMAT\n");
 	}
 
-	printf("format done\n");
+	printf("t1: format done\n");
+	printf("\n --t1:  MOUNT\n");
 	getchar();
-	printf("\n -- MOUNT\n");
 
     if (mount(0) == -1){
-		printf("Erro MOUNT\n");
+		printf("t1: Erro MOUNT\n");
 	}
 
-	printf("mount done\n");
-	printf("Listagens e criacao de arquivos\n");
+	printf("Lista 2 vzs.\n");
+	getchar();
+	lista_dir();
+	lista_dir();
+	getchat();
+
+	printf("t1: mount done\n");
+	printf("t1: Listagens e criacao de arquivos\n");
 	getchar();
 
 	lista_dir();
 	getchar();
-	printf("--Cria arq 1\n");
-    printf("Arq1: %d\n", create2("arq1.txt"));
-	lista_dir();
+	printf("--t1: Cria arq 1\n");
+    printf("t1: Arq1: %d\n", create2("arq1.txt"));
+    printf("t1:PARA AQUI\n");
+    //getchar();
+	//lista_dir();
 	getchar();
-	printf("--Cria arq 2\n");
-	printf("Arq2: %d\n", create2("arq2.txt"));
+	printf("--t1: Cria arq 2\n");
+	printf("t1: Arq2: %d\n", create2("arq2.txt"));
     create2("Foto.jpg");
 	lista_dir();
     create2("TrabalhoSisop.c");
