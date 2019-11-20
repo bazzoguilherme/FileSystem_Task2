@@ -271,8 +271,8 @@ int format2(int partition, int sectors_per_block)
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
     int num_inodes = num_blocos_inodes * tam_bloco / sizeof(struct t2fs_inode);
-    int num_blocos_bitmap_inode = ceil(num_inodes / tam_bloco);
-    int num_blocos_bitmap_blocos = ceil(num_blocos / tam_bloco);
+    int num_blocos_bitmap_inode = ceil((float)num_inodes / tam_bloco);
+    int num_blocos_bitmap_blocos = ceil((float)num_blocos / tam_bloco);
 
     struct t2fs_superbloco superbloco;
     char id[4] = "T2FS";
@@ -303,11 +303,11 @@ int format2(int partition, int sectors_per_block)
     // Zera o bitmap de inodes
     do
     {
-        if((i = searchBitmap2(BITMAP_INODE, 1)) < 0)  // Se retorno da funcao for negativo, deu erro
+        if((i = searchBitmap2(BITMAP_INODE, 1)) < -1)  // Se retorno da funcao for menor que -1, deu erro (-1 == não encontrado ????)
         {
             return -1;
         }
-        if(i)   // Se i for positivo, achou bit com valor 1
+        if(i != -1)   // Se i for positivo, achou bit com valor 1
         {
             if(setBitmap2(BITMAP_INODE, i, 0))
             {
@@ -315,17 +315,17 @@ int format2(int partition, int sectors_per_block)
             }
         }
     }
-    while(i);
+    while(i != -1);
 
 
     // Zera o bitmap de dados
     do
     {
-        if((i = searchBitmap2(BITMAP_DADOS, 1)) < 0)  // Se retorno da funcao for negativo, deu erro
+        if((i = searchBitmap2(BITMAP_DADOS, 1)) < -1)  // Se retorno da funcao for menor que -1, deu erro (-1 == não encontrado ????)
         {
             return -1;
         }
-        if(i)   // Se i for positivo, achou bit com valor 1
+        if(i != -1)   // Se i for positivo, achou bit com valor 1
         {
             if(setBitmap2(BITMAP_DADOS, i, 0))
             {
@@ -333,7 +333,7 @@ int format2(int partition, int sectors_per_block)
             }
         }
     }
-    while(i);
+    while(i != -1);
 
     // Marca os blocos onde estao o superbloco e os bitmaps como ocupados
     for(i=0; i < TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++)
@@ -363,7 +363,7 @@ int format2(int partition, int sectors_per_block)
 
     // Bloco de inicio da area de inodes
     int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
-    int setor_inicio_area_inodes = inicio_area_inodes * TAM_SETOR;
+    int setor_inicio_area_inodes = inicio_area_inodes * sectors_per_block;
     if(write_sector(setor_inicio + setor_inicio_area_inodes, (unsigned char *)&inode_raiz))
     {
         return -1;
@@ -2271,7 +2271,7 @@ int closedir2 (void)
 
     /// Escrita do inode (possivelmente) atualizado
     inode.bytesFileSize = registros_escritos * tam_registro;
-    inode.blocksFileSize = ceil(inode.bytesFileSize / bytes_por_bloco);
+    inode.blocksFileSize = ceil((float)inode.bytesFileSize / bytes_por_bloco);
 
     memcpy(&buffer_inode[0], &inode, sizeof(struct t2fs_inode));
     if(write_sector(base + inicio_area_inodes, buffer_inode))
