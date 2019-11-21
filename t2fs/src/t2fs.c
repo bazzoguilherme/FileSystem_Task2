@@ -457,7 +457,7 @@ int mount(int partition)
 /*-----------------------------------------------------------------------------
 Função:	Desmonta a partição atualmente montada, liberando o ponto de montagem.
 -----------------------------------------------------------------------------*/
-int unmount(void)
+int umount(void)
 {
 
     if(closeBitmap2())  // Fecha os bitmaps da particao
