@@ -52,9 +52,10 @@ int main(){
     printf("t1: Arq1: %d\n", create2("arq1.txt"));
     printf("t1:PARA AQUI\n");
     getchar();
-	lista_dir();
-	getchar();
+//	lista_dir();
+//	getchar();
 	printf("--t1: Cria arq 2\n");
+	getchar();
 	printf("t1: Arq2: %d\n", create2("arq2.txt"));
 	return 0;
     create2("Foto.jpg");
