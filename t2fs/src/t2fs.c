@@ -85,7 +85,7 @@ int get_element(Linked_List* list, char* nome_registro_, struct t2fs_record* reg
     {
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
-            registro = &aux->registro;
+            *registro = aux->registro;
             return 0;
         }
         aux = aux->next;
@@ -110,6 +110,7 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_)
     if (strcmp(list->registro.name, nome_registro_) == 0)
     {
         aux = list->next;
+        printf("++ Deleta: %s\n", list->registro.name);
         free(list);
         return aux;
     }
@@ -122,6 +123,7 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_)
     if (strcmp(freed_node->registro.name, nome_registro_) == 0)
     {
         aux->next = freed_node->next;
+        printf("++ Deleta: %s\n", freed_node->registro.name);
         free(freed_node);
     }
 
@@ -646,7 +648,7 @@ int delete2 (char *filename)
         closedir2();
         return -1;
     }
-
+    printf("<< Elemento pego: %s\n", registro.name);
     if(closedir2()){
         if (DEBUG_MODE){printf("**Erro closedir - inicio**\n");}
         return -1;
@@ -819,7 +821,7 @@ int delete2 (char *filename)
         if (DEBUG_MODE){printf("**Erro closedir - fim**\n");}
         return -1;
     }
-
+    if (DEBUG_MODE){printf("> DELETE end\n");}
     return 0;
 }
 
@@ -2414,13 +2416,25 @@ int closedir2 (void)
     }
     if (DEBUG_MODE){printf(">> Limpa memoria de arquivos antigos\n");}
     // Limpa memória dos arquivos que estavam em lista de arquivos de diretorio
-    aux = arquivos_diretorio;
-    while(aux != NULL){
-        aux = aux->next;
-        free(arquivos_diretorio);
-        arquivos_diretorio = aux;
+//    aux = arquivos_diretorio;
+//    while(aux != NULL){
+//        printf("Arq removido: %s\n", aux->registro.name);
+//        aux = aux->next;
+//        printf("\taux pega proximo\n");
+//        free(arquivos_diretorio);
+//        printf("\tlimpa arq\n");
+//        arquivos_diretorio = aux;
+//        printf("\tpega novo de aux\n");
+//    }
+//    while (arquivos_diretorio!=NULL){
+//        printf("~~%s\n", arquivos_diretorio->registro.name);
+//        arquivos_diretorio = delete_element(arquivos_diretorio, arquivos_diretorio->registro.name);
+//    }
+    //arquivos_diretorio = NULL;
+    printf("~~%s\n", arquivos_diretorio->registro.name);
+    if (arquivos_diretorio->next != NULL){
+        printf("~~%s\n", arquivos_diretorio->next->registro.name);
     }
-    arquivos_diretorio = NULL;
     current_dentry = NULL;
 
     diretorio_aberto = false;
