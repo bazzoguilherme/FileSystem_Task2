@@ -513,9 +513,11 @@ FILE2 create2 (char *filename)
         }
     }
 
-    if(closedir2()){
-        if (DEBUG_MODE){printf("**Erro fechar dir - inicio**\n");}
-        return -1;
+    if(diretorio_aberto){
+        if(closedir2()){
+            if (DEBUG_MODE){printf("**Erro fechar dir - inicio**\n");}
+            return -1;
+        }
     }
 
     /// T2FS Record
