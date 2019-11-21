@@ -347,8 +347,8 @@ int format2(int partition, int sectors_per_block)
     }
     while(i != -1);
 
-    // Marca os blocos onde estao o superbloco e os bitmaps como ocupados
-    for(i=0; i < TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_inodes; i++)
+    // Marca os blocos onde estao o superbloco, os bitmaps e os blocos de inodes como ocupados
+    for(i=0; i < TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode + num_blocos_inodes; i++)
     {
         if(setBitmap2(BITMAP_DADOS, i, 1))
         {
