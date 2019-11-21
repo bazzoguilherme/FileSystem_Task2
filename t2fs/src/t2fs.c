@@ -518,13 +518,6 @@ FILE2 create2 (char *filename)
         return -1;
     }
 
-    /*  ********* */
-    unsigned char b[256];
-    struct t2fs_inode inodeR;
-    read_sector(11, b);
-    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
-    printf("3IBDR: %d\n",inodeR.dataPtr[0]);
-    /* ********************** */
     /// T2FS Record
     struct t2fs_record created_file_record;
     created_file_record.TypeVal = TYPEVAL_REGULAR; // Registro regular
@@ -578,26 +571,12 @@ FILE2 create2 (char *filename)
         return -1;
     }
 
-        /*  ********* */
-    read_sector(11, b);
-    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
-    printf("3.5IBDR: %d\n",inodeR.dataPtr[0]);
-
-    printf("Setor/End: %d   %d", setor_novo_inode, end_novo_inode);
-    /* ********************** */
-
     memcpy(&buffer[end_novo_inode*sizeof(struct t2fs_inode)], &new_inode, sizeof(struct t2fs_inode));
     if(write_sector(base + setor_novo_inode, buffer))
     {
         if (DEBUG_MODE){printf("**Erro escrita de inode para novo arquivo em disco**\n");}
         return -1;
     }
-
-/*  ********* */
-    read_sector(11, b);
-    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
-    printf("4IBDR: %d\n",inodeR.dataPtr[0]);
-    /* ********************** */
 
     if(setBitmap2(BITMAP_INODE, indice_inode, 1))
     {
@@ -616,21 +595,12 @@ FILE2 create2 (char *filename)
         if (DEBUG_MODE){printf("**Erro opendir - fim**\n");}
         return -1;
     }
-    /*  ********* */
-    read_sector(11, b);
-    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
-    printf("5IBDR: %d\n",inodeR.dataPtr[0]);
-    /* ********************** */
+
     arquivos_diretorio = insert_element(arquivos_diretorio, created_file_record);
     if(closedir2()){
         if (DEBUG_MODE){printf("**Erro closedir - fim**\n");}
         return -1;
     }
-    /*  ********* */
-    read_sector(11, b);
-    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
-    printf("6IBDR: %d\n",inodeR.dataPtr[0]);
-    /* ********************** */
 
     if (DEBUG_MODE){printf("> CREATE end - chamando open\n");}
     return open2(filename);
@@ -698,7 +668,7 @@ int delete2 (char *filename)
         if (DEBUG_MODE){printf("**Erro leitura setor 1**\n");}
         return -1;
     }
-    memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+    memcpy(&inode, &buffer[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
     // Se houver hardlinks, apenas decrementa o contator e deleta o registro
     if(inode.RefCounter > 1)
@@ -918,7 +888,7 @@ FILE2 open2 (char *filename)
         }
 
         struct t2fs_inode inode;
-        memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+        memcpy(&inode, &buffer[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
         // Bloco contendo o nome do arquivo referenciado
         int indice_bloco = inode.dataPtr[0];
@@ -1049,7 +1019,7 @@ int read2 (FILE2 handle, char *buffer, int size)
         if (DEBUG_MODE){printf("**Erro leitura setor 1**\n");}
         return -1;
     }
-    memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
+    memcpy(&inode, &buffer_inode[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
     unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize;
 
@@ -1397,7 +1367,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         if (DEBUG_MODE){printf("**Erro leitura setor 1**\n");}
         return -1;
     }
-    memcpy(&inode, &buffer_inode[end_inode], sizeof(struct t2fs_inode));
+    memcpy(&inode, &buffer_inode[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
     unsigned int qtde_blocos_arquivo = inode.blocksFileSize;
     unsigned int bytes_por_bloco = TAM_SETOR * superbloco_montado.blockSize;
@@ -1793,7 +1763,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         inode.bytesFileSize = open_files[handle].current_pointer;
     }
 
-    memcpy(&buffer_inode[end_inode], &inode, sizeof(struct t2fs_inode));
+    memcpy(&buffer_inode[end_inode*sizeof(struct t2fs_inode)], &inode, sizeof(struct t2fs_inode));
     if(write_sector(base + setor_inode, buffer_inode))
     {
         if (DEBUG_MODE){printf("**Erro escrita - final**\n");}
@@ -1977,7 +1947,7 @@ int opendir2 (void)
         if (DEBUG_MODE){printf("**Erro leitura setor**\n");}
         return -1;
     }
-    memcpy(inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+    memcpy(inode, &buffer[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
 
     int i = 0;
@@ -2061,7 +2031,7 @@ printf("le_setor : %d\n", base+setor_inode);
     read_sector(base + setor_inode, buff);
 printf("terminou_ler_setor\n");
     struct t2fs_inode inode;
-    memcpy(&inode, &buff[end_inode], sizeof(struct t2fs_inode));
+    memcpy(&inode, &buff[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
     entradaDir->fileSize = inode.bytesFileSize;
 
@@ -2436,7 +2406,7 @@ int closedir2 (void)
     inode.bytesFileSize = registros_escritos * tam_registro;
     inode.blocksFileSize = ceil((float)inode.bytesFileSize / bytes_por_bloco);
 
-    memcpy(&buffer_inode[0], &inode, sizeof(struct t2fs_inode));
+    memcpy(buffer_inode, &inode, sizeof(struct t2fs_inode));
     if(write_sector(base + inicio_area_inodes, buffer_inode))
     {
         if (DEBUG_MODE){printf("**Erro escrita inode raiz (atualizado)**\n");}
@@ -2551,7 +2521,7 @@ int sln2 (char *linkname, char *filename)
         closedir2();
         return -1;
     }
-    memcpy(&buffer[end_novo_inode], &inode, sizeof(struct t2fs_inode));
+    memcpy(&buffer[end_novo_inode*sizeof(struct t2fs_inode)], &inode, sizeof(struct t2fs_inode));
     if(write_sector(base + setor_novo_inode, buffer))
     {
         closedir2();
@@ -2643,7 +2613,7 @@ int hln2(char *linkname, char *filename)
         closedir2();
         return -1;
     }
-    memcpy(&inode, &buffer[end_inode], sizeof(struct t2fs_inode));
+    memcpy(&inode, &buffer[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
     // Incrementa contador de referencia. Inode do hardlink eh o mesmo que o inode do arquivo referenciado
     inode.RefCounter++;
