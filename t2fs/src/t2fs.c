@@ -1940,16 +1940,14 @@ int opendir2 (void)
 
     int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
     int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-    //int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
     int setor_inode = setor_inicio_area_inodes;
-    int end_inode = 0;  // Diretorio raiz esta associado ao inode 0
 
     if(read_sector(base + setor_inode, buffer))
     {
         if (DEBUG_MODE){printf("**Erro leitura setor**\n");}
         return -1;
     }
-    memcpy(inode, &buffer[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
+    memcpy(inode, buffer, sizeof(struct t2fs_inode)); // Diretorio raiz esta associado ao inode 0
 
 
     int i = 0;
