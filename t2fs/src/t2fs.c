@@ -58,6 +58,8 @@ Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_)
     new_node->registro = registro_;
     new_node->next = NULL;
 
+    //printf("++ Insercao: %s -- %p\n", registro_.name, new_node);
+
     if (list == NULL)
     {
         return new_node;
@@ -85,7 +87,7 @@ int get_element(Linked_List* list, char* nome_registro_, struct t2fs_record* reg
     {
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
-            registro = &aux->registro;
+            *registro = aux->registro;
             return 0;
         }
         aux = aux->next;
@@ -99,6 +101,7 @@ Deleta um elemento da lista encadeada
 -----------------------------------------------------------------------------*/
 Linked_List* delete_element(Linked_List* list, char* nome_registro_)
 {
+    //printf("+-+ Pedido para deletar: %s\n", nome_registro_);
     Linked_List* aux = NULL;
     Linked_List* freed_node = list;
 
@@ -110,7 +113,8 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_)
     if (strcmp(list->registro.name, nome_registro_) == 0)
     {
         aux = list->next;
-        free(list);
+        //printf("1++ Deleta: %s -- %p\n", list->registro.name, list);
+        //free(list);
         return aux;
     }
 
@@ -122,9 +126,9 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_)
     if (strcmp(freed_node->registro.name, nome_registro_) == 0)
     {
         aux->next = freed_node->next;
-        free(freed_node);
+        //printf("2++ Deleta: %s\n", freed_node->registro.name);
+        //free(freed_node);
     }
-
     return list;
 }
 
@@ -136,7 +140,7 @@ boolean contains(Linked_List* list, char* nome_registro_)
     Linked_List* aux = list;
     while (aux!=NULL)
     {
-        printf("arq1: %s X arq2: %s == %d\n", aux->registro.name, nome_registro_, strcmp(aux->registro.name, nome_registro_));
+        //printf("arq1: %s X arq2: %s == %d\n", aux->registro.name, nome_registro_, strcmp(aux->registro.name, nome_registro_));
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
             return true;
@@ -633,7 +637,7 @@ int delete2 (char *filename)
 
     if (!contains(arquivos_diretorio, filename))  // Caso não haja o arquivo no diretorio, retorna erro
     {
-        if (DEBUG_MODE){printf("**Erro arquivo ja em diretorio**\n");}
+        if (DEBUG_MODE){printf("**Erro arquivo nao em diretorio**\n");}
         closedir2();
         return -1;
     }
@@ -830,7 +834,7 @@ int delete2 (char *filename)
         if (DEBUG_MODE){printf("**Erro closedir - fim**\n");}
         return -1;
     }
-
+    if (DEBUG_MODE){printf("> DELETE end\n");}
     return 0;
 }
 
@@ -2019,7 +2023,6 @@ int readdir2 (DIRENT2 *dentry)
 
     if(current_dentry == NULL){
         if (DEBUG_MODE){printf("Current dentry null\n");}
-        current_dentry = arquivos_diretorio;
         return -1;
     }
 
@@ -2038,9 +2041,9 @@ int readdir2 (DIRENT2 *dentry)
     int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
     int setor_inode = setor_inicio_area_inodes + (registro.inodeNumber / inodes_por_setor);
     int end_inode = registro.inodeNumber % inodes_por_setor;
-printf("le_setor : %d\n", base+setor_inode);
+
     read_sector(base + setor_inode, buff);
-printf("terminou_ler_setor\n");
+
     struct t2fs_inode inode;
     memcpy(&inode, &buff[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
 
@@ -2094,7 +2097,7 @@ int closedir2 (void)
     // Adiciona um registro invalido ao fim da lista, para usar como criterio de parada na opendir2
     struct t2fs_record registro_invalido;
     registro_invalido.inodeNumber = -1;
-    strcpy(registro_invalido.name, "");
+    strcpy(registro_invalido.name, "invalid.invalid");
     registro_invalido.TypeVal = TYPEVAL_INVALIDO;
     arquivos_diretorio = insert_element(arquivos_diretorio, registro_invalido);
 
@@ -2425,13 +2428,25 @@ int closedir2 (void)
     }
     if (DEBUG_MODE){printf(">> Limpa memoria de arquivos antigos\n");}
     // Limpa memória dos arquivos que estavam em lista de arquivos de diretorio
-    aux = arquivos_diretorio;
-    while(aux != NULL){
-        aux = aux->next;
-        free(arquivos_diretorio);
-        arquivos_diretorio = aux;
+//    aux = arquivos_diretorio;
+//    while(aux != NULL){
+//        printf("Arq removido: %s\n", aux->registro.name);
+//        aux = aux->next;
+//        printf("\taux pega proximo\n");
+//        free(arquivos_diretorio);
+//        printf("\tlimpa arq\n");
+//        arquivos_diretorio = aux;
+//        printf("\tpega novo de aux\n");
+//    }
+    while (arquivos_diretorio!=NULL){
+        printf("~~%s\n", arquivos_diretorio->registro.name);
+        arquivos_diretorio = delete_element(arquivos_diretorio, arquivos_diretorio->registro.name);
     }
-    arquivos_diretorio = NULL;
+    //arquivos_diretorio = NULL;
+//    printf("~~%s\n", arquivos_diretorio->registro.name);
+//    if (arquivos_diretorio->next != NULL){
+//        printf("~~%s\n", arquivos_diretorio->next->registro.name);
+//    }
     current_dentry = NULL;
 
     diretorio_aberto = false;
