@@ -114,8 +114,7 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_)
     {
         aux = list->next;
         //printf("1++ Deleta: %s -- %p\n", list->registro.name, list);
-        free(list);
-        list = NULL;
+        //free(list);
         return aux;
     }
 
@@ -141,7 +140,7 @@ boolean contains(Linked_List* list, char* nome_registro_)
     Linked_List* aux = list;
     while (aux!=NULL)
     {
-        printf("arq1: %s X arq2: %s == %d\n", aux->registro.name, nome_registro_, strcmp(aux->registro.name, nome_registro_));
+        //printf("arq1: %s X arq2: %s == %d\n", aux->registro.name, nome_registro_, strcmp(aux->registro.name, nome_registro_));
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
             return true;
