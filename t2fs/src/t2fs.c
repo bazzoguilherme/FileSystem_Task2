@@ -218,6 +218,10 @@ int aloca_bloco()
         return bloco;
     }
 
+    if(setBitmap2(BITMAP_DADOS, bloco, 1)){
+        return -1;
+    }
+
     int setor_inicio = bloco * superbloco_montado.blockSize; // Setor de inicio do bloco
 
     // Limpa bloco
