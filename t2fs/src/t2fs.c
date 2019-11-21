@@ -518,6 +518,13 @@ FILE2 create2 (char *filename)
         return -1;
     }
 
+    /*  ********* */
+    unsigned char b[256];
+    struct t2fs_inode inodeR;
+    read_sector(11, b);
+    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
+    printf("3IBDR: %d\n",inodeR.dataPtr[0]);
+    /* ********************** */
     /// T2FS Record
     struct t2fs_record created_file_record;
     created_file_record.TypeVal = TYPEVAL_REGULAR; // Registro regular
@@ -570,12 +577,27 @@ FILE2 create2 (char *filename)
         if (DEBUG_MODE){printf("**Erro leitura disco**\n");}
         return -1;
     }
-    memcpy(&buffer[end_novo_inode], &new_inode, sizeof(struct t2fs_inode));
+
+        /*  ********* */
+    read_sector(11, b);
+    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
+    printf("3.5IBDR: %d\n",inodeR.dataPtr[0]);
+
+    printf("Setor/End: %d   %d", setor_novo_inode, end_novo_inode);
+    /* ********************** */
+
+    memcpy(&buffer[end_novo_inode*sizeof(struct t2fs_inode)], &new_inode, sizeof(struct t2fs_inode));
     if(write_sector(base + setor_novo_inode, buffer))
     {
         if (DEBUG_MODE){printf("**Erro escrita de inode para novo arquivo em disco**\n");}
         return -1;
     }
+
+/*  ********* */
+    read_sector(11, b);
+    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
+    printf("4IBDR: %d\n",inodeR.dataPtr[0]);
+    /* ********************** */
 
     if(setBitmap2(BITMAP_INODE, indice_inode, 1))
     {
@@ -594,11 +616,21 @@ FILE2 create2 (char *filename)
         if (DEBUG_MODE){printf("**Erro opendir - fim**\n");}
         return -1;
     }
+    /*  ********* */
+    read_sector(11, b);
+    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
+    printf("5IBDR: %d\n",inodeR.dataPtr[0]);
+    /* ********************** */
     arquivos_diretorio = insert_element(arquivos_diretorio, created_file_record);
     if(closedir2()){
         if (DEBUG_MODE){printf("**Erro closedir - fim**\n");}
         return -1;
     }
+    /*  ********* */
+    read_sector(11, b);
+    memcpy(&inodeR, b, sizeof(struct t2fs_inode));
+    printf("6IBDR: %d\n",inodeR.dataPtr[0]);
+    /* ********************** */
 
     if (DEBUG_MODE){printf("> CREATE end - chamando open\n");}
     return open2(filename);
