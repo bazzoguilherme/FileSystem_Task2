@@ -539,10 +539,10 @@ FILE2 create2 (char *filename)
 
     // Selecao de um i-node para o arquivo
     int indice_inode;
-    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0)  // Se retorno da funcao for negativo, deu erro
+    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) < 0)  // Se retorno da funcao for negativo, deu erro
     {
         if (DEBUG_MODE){printf("**Erro ao procurar bitmap para arquivo criado**\n");}
-        return -1;                                        // Se for 0, nao ha blocos livres
+        return -1;
     }
 
     /// inicializacao i-node
@@ -2489,10 +2489,10 @@ int sln2 (char *linkname, char *filename)
 
     // Selecao de um i-node para o arquivo
     int indice_inode;
-    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) <= 0)  // Se retorno da funcao for negativo, deu erro
+    if((indice_inode = searchBitmap2(BITMAP_INODE, 0)) < 0)  // Se retorno da funcao for negativo, deu erro
     {
         closedir2();
-        return -1;                                        // Se for 0, nao ha blocos livres
+        return -1;
     }
 
     /// inicializacao i-node
