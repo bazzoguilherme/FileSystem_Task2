@@ -647,11 +647,6 @@ int delete2 (char *filename)
         return -1;
     }
 
-    if(closedir2()){
-        if (DEBUG_MODE){printf("**Erro closedir - inicio**\n");}
-        return -1;
-    }
-
     // DESALOCA BLOCOS DE DADOS E I-NODE
     int i,j,k,l;
     unsigned char buffer[TAM_SETOR];
@@ -668,6 +663,7 @@ int delete2 (char *filename)
     if(read_sector(base + setor_inode, buffer))
     {
         if (DEBUG_MODE){printf("**Erro leitura setor 1**\n");}
+        closedir2();
         return -1;
     }
     memcpy(&inode, &buffer[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
@@ -676,7 +672,17 @@ int delete2 (char *filename)
     if(inode.RefCounter > 1)
     {
         inode.RefCounter--;
+        // Escreve inode
+        memcpy(&buffer[end_inode*sizeof(struct t2fs_inode)], &inode, sizeof(struct t2fs_inode));
+        if(write_sector(base + setor_inode, buffer)){
+            closedir2();
+            return -1;
+        }
+
         arquivos_diretorio = delete_element(arquivos_diretorio, filename);
+        if(closedir2()){
+            return -1;
+        }
         return 0;
     }
 
@@ -687,9 +693,11 @@ int delete2 (char *filename)
     {
         if(inode.dataPtr[i] != -1)
         {
+            printf("Inode dP %d", inode.dataPtr[i]);
             if(setBitmap2(BITMAP_DADOS, inode.dataPtr[i], 0))
             {
                 if (DEBUG_MODE){printf("**Erro ao setar bitmap 1**\n");}
+                closedir2();
                 return -1;
             }
             blocos_liberados ++;
@@ -709,6 +717,7 @@ int delete2 (char *filename)
             if(read_sector(base + setor_inicio_bloco + i, buffer))  // Le o setor
             {
                 if (DEBUG_MODE){printf("**Erro ao ler setor 2**\n");}
+                closedir2();
                 return -1;
             }
 
@@ -721,6 +730,7 @@ int delete2 (char *filename)
                 if(setBitmap2(BITMAP_DADOS, ponteiro, 0))  // Libera o bloco de dados
                 {
                     if (DEBUG_MODE){printf("**Erro setar bitmap 2**\n");}
+                    closedir2();
                     return -1;
                 }
                 blocos_liberados++;
@@ -731,6 +741,7 @@ int delete2 (char *filename)
         if(setBitmap2(BITMAP_DADOS, indice_bloco_indice, 0))  // Libera o bloco de ind simples
         {
             if (DEBUG_MODE){printf("**Erro ao setar bitmap 3**\n");}
+            closedir2();
             return -1;
         }
     }
@@ -747,6 +758,7 @@ int delete2 (char *filename)
             if(read_sector(base + setor_inicio_bloco_indD + k, buffer))  // Le o setor
             {
                 if (DEBUG_MODE){printf("**Erro ao ler setor 3**\n");}
+                closedir2();
                 return -1;
             }
             l = 0;
@@ -764,6 +776,7 @@ int delete2 (char *filename)
                     if(read_sector(base + setor_inicio_bloco + i, buffer2))  // Le o setor
                     {
                         if (DEBUG_MODE){printf("**Erro ao ler setor 4**\n");}
+                        closedir2();
                         return -1;
                     }
                     j=0;
@@ -775,6 +788,7 @@ int delete2 (char *filename)
                         if(setBitmap2(BITMAP_DADOS, pt2, 0))  // Libera o bloco de dados
                         {
                             if (DEBUG_MODE){printf("**Erro ao setar bitmap 4**\n");}
+                            closedir2();
                             return -1;
                         }
                         blocos_liberados++;
@@ -785,6 +799,7 @@ int delete2 (char *filename)
                 if(setBitmap2(BITMAP_DADOS, pt1, 0))  // Libera o bloco de ind simples
                 {
                     if (DEBUG_MODE){printf("**Erro ao setar bitmap 5**\n");}
+                    closedir2();
                     return -1;
                 }
                 l++;
@@ -794,6 +809,7 @@ int delete2 (char *filename)
         if(setBitmap2(BITMAP_DADOS, bloco_indD, 0))  // Libera o bloco de ind dupla
         {
             if (DEBUG_MODE){printf("**Erro ao setar bitmap 6**\n");}
+            closedir2();
             return -1;
         }
     }
@@ -802,12 +818,7 @@ int delete2 (char *filename)
     if(setBitmap2(BITMAP_INODE, indice_inode, 0))
     {
         if (DEBUG_MODE){printf("**Erro ao setar bitmap 7**\n");}
-        return -1;
-    }
-
-
-    if(opendir2()){
-        if (DEBUG_MODE){printf("**Erro opendir - fim**\n");}
+        closedir2();
         return -1;
     }
 
