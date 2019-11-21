@@ -296,13 +296,12 @@ int format2(int partition, int sectors_per_block)
     superbloco.diskSize = num_blocos;              // Número total de blocos da partição
     superbloco.Checksum = checksum(&superbloco);   // Soma dos 5 primeiros inteiros de 32 bits do superbloco, complementado de 1
 
-
-    if(write_sector(setor_inicio, (unsigned char *)&superbloco))
+    memcpy(buffer, &superbloco, sizeof(struct t2fs_superbloco));
+    if(write_sector(setor_inicio, buffer))
     {
         if (DEBUG_MODE){printf("**Erro escrita de setor**\n");}
         return -1;
     }
-
 
 
     /// Inicializacao dos Bitmaps
@@ -382,7 +381,9 @@ int format2(int partition, int sectors_per_block)
     // Bloco de inicio da area de inodes
     int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
     int setor_inicio_area_inodes = inicio_area_inodes * sectors_per_block;
-    if(write_sector(setor_inicio + setor_inicio_area_inodes, (unsigned char *)&inode_raiz))
+
+    memcpy(buffer, &inode_raiz, sizeof(struct t2fs_inode));
+    if(write_sector(setor_inicio + setor_inicio_area_inodes, buffer))
     {
         return -1;
     }
