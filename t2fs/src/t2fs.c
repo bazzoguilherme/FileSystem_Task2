@@ -285,8 +285,8 @@ int format2(int partition, int sectors_per_block)
 
     int tam_bloco = sectors_per_block * tam_setor; // Em bytes
     int num_inodes = num_blocos_inodes * tam_bloco / sizeof(struct t2fs_inode);
-    int num_blocos_bitmap_inode = ceil((float)num_inodes / tam_bloco);
-    int num_blocos_bitmap_blocos = ceil((float)num_blocos / tam_bloco);
+    int num_blocos_bitmap_inode = ceil((float)num_inodes / (8*tam_bloco));
+    int num_blocos_bitmap_blocos = ceil((float)num_blocos / (8*tam_bloco));
 
     struct t2fs_superbloco superbloco;
     char id[4] = "T2FS";
