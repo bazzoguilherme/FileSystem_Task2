@@ -269,8 +269,9 @@ int format2(int partition, int sectors_per_block)
     }
 
     int tam_setor = getDado(buffer, 2, 2);
-    int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
-    int setor_fim = getDado(buffer, 12 + 24*partition, 4);
+    int setor_inicio = getDado(buffer, 8 + 32*partition, 4);
+    int setor_fim = getDado(buffer, 12 + 32*partition, 4);
+    printf("Ini: %d\tFim: %d", setor_inicio, setor_fim);
     int num_setores = setor_fim - setor_inicio + 1;
     int num_blocos = num_setores / sectors_per_block;
     int num_blocos_inodes = ceil(0.1 * num_blocos);
