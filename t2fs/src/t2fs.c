@@ -1129,7 +1129,7 @@ int read2 (FILE2 handle, char *buffer, int size)
             {
 
                 // Le o setor do disco para buffer_setor
-                if(read_sector(base + setor_inicio_direto_b, buffer_setor))  // Le o setor
+                if(read_sector(base + setor_inicio_direto_b + ind_setor_dados, buffer_setor))  // Le o setor
                 {
                     if (DEBUG_MODE){printf("**Erro leitura setor 3**\n");}
                     return -1;
@@ -1498,7 +1498,7 @@ int write2 (FILE2 handle, char *buffer, int size)
         {
 
             // Le o setor do disco para buffer_setor
-            if(read_sector(base + setor_inicio_direto_b, buffer_setor))  // Le o setor
+            if(read_sector(base + setor_inicio_direto_b + ind_setor_dados, buffer_setor))  // Le o setor
             {
                 if (DEBUG_MODE){printf("**Erro leitura setor 3**\n");}
                 return -1;
@@ -1516,12 +1516,13 @@ int write2 (FILE2 handle, char *buffer, int size)
                 bytes_write++;
                 open_files[handle].current_pointer++;
             }
-            ind_setor_dados++;
-            if(write_sector(base + setor_inicio_direto_b, buffer_setor))  // Escreve o setor
+
+            if(write_sector(base + setor_inicio_direto_b + ind_setor_dados, buffer_setor))  // Escreve o setor
             {
                 if (DEBUG_MODE){printf("**Erro escrita setor 2**\n");}
                 return -1;
             }
+            ind_setor_dados++;
         }
         ind_byte = 0;
     }
