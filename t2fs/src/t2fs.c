@@ -14,7 +14,7 @@
 #define MAX_OPEN_FILE 10
 #define TAM_SETOR 256    // Tamanho de um setor em bytes
 
-#define DEBUG_MODE 1
+#define DEBUG_MODE 0
 
 typedef struct file_t2fs
 {
@@ -58,8 +58,6 @@ Linked_List* insert_element(Linked_List* list, struct t2fs_record registro_)
     new_node->registro = registro_;
     new_node->next = NULL;
 
-    //printf("++ Insercao: %s -- %p\n", registro_.name, new_node);
-
     if (list == NULL)
     {
         return new_node;
@@ -101,7 +99,6 @@ Deleta um elemento da lista encadeada
 -----------------------------------------------------------------------------*/
 Linked_List* delete_element(Linked_List* list, char* nome_registro_)
 {
-    //printf("+-+ Pedido para deletar: %s\n", nome_registro_);
     Linked_List* aux = NULL;
     Linked_List* freed_node = list;
 
@@ -113,7 +110,6 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_)
     if (strcmp(list->registro.name, nome_registro_) == 0)
     {
         aux = list->next;
-        //printf("1++ Deleta: %s -- %p\n", list->registro.name, list);
         //free(list);
         return aux;
     }
@@ -126,7 +122,6 @@ Linked_List* delete_element(Linked_List* list, char* nome_registro_)
     if (strcmp(freed_node->registro.name, nome_registro_) == 0)
     {
         aux->next = freed_node->next;
-        //printf("2++ Deleta: %s\n", freed_node->registro.name);
         //free(freed_node);
     }
     return list;
@@ -140,7 +135,6 @@ boolean contains(Linked_List* list, char* nome_registro_)
     Linked_List* aux = list;
     while (aux!=NULL)
     {
-        //printf("arq1: %s X arq2: %s == %d\n", aux->registro.name, nome_registro_, strcmp(aux->registro.name, nome_registro_));
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
             return true;
@@ -692,14 +686,12 @@ int delete2 (char *filename)
         // Escreve inode
         memcpy(&buffer[end_inode*sizeof(struct t2fs_inode)], &inode, sizeof(struct t2fs_inode));
         if(write_sector(base + setor_inode, buffer)){
-            printf("!\n");
             closedir2();
             return -1;
         }
 
         arquivos_diretorio = delete_element(arquivos_diretorio, filename);
         if(closedir2()){
-            printf("!!\n");
             return -1;
         }
         return 0;
@@ -712,7 +704,6 @@ int delete2 (char *filename)
     {
         if(inode.dataPtr[i] != -1)
         {
-            printf("Inode dP %d", inode.dataPtr[i]);
             if(setBitmap2(BITMAP_DADOS, inode.dataPtr[i], 0))
             {
                 if (DEBUG_MODE){printf("**Erro ao setar bitmap 1**\n");}
@@ -1523,8 +1514,8 @@ int write2 (FILE2 handle, char *buffer, int size)
                 return -1;
             }
             ind_setor_dados++;
+            ind_byte = 0;
         }
-        ind_byte = 0;
     }
     else
     {
@@ -1826,18 +1817,6 @@ int carregaRegistrosDataPtr(DWORD blockNumber)
             memcpy(&registro, buffer + j * sizeof(struct t2fs_record), sizeof(struct t2fs_record));
             if(registro.TypeVal != 0x00)
             {
-                printf("&Arquivo achado: %s\n", registro.name);
-                struct t2fs_inode inode;
-                unsigned char b[256] = {0};
-                int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
-                int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
-                int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
-                int setor_inode = setor_inicio_area_inodes + (registro.inodeNumber / inodes_por_setor);
-                int end_inode = registro.inodeNumber % inodes_por_setor;
-
-                read_sector(base + setor_inode, b);
-                memcpy(&inode, &b[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
-                printf("Inode ref: %d\n", inode.RefCounter);
                 arquivos_diretorio = insert_element(arquivos_diretorio, registro); // Adiciona registro em lista de arquivos abertos
             }
             else
@@ -2136,9 +2115,6 @@ int closedir2 (void)
         qtd_registros++;
         aux = aux->next;
     }
-
-    printf("<> Quant arquivos: %d\n", qtd_registros);
-
     aux = arquivos_diretorio;
 
     /// Escrita no primeiro bloco direto
@@ -2170,7 +2146,6 @@ int closedir2 (void)
             while(registros_escritos < qtd_registros &&  ind_reg < registros_por_setor)
             {
                 memcpy(buffer + registros_escritos*tam_registro, &aux->registro, tam_registro);
-                printf("\t--Arquivo escrito: %s\n", aux->registro.name);
                 aux = aux->next;
                 registros_escritos++;
                 ind_reg++;
@@ -2455,25 +2430,12 @@ int closedir2 (void)
     }
     if (DEBUG_MODE){printf(">> Limpa memoria de arquivos antigos\n");}
     // Limpa memória dos arquivos que estavam em lista de arquivos de diretorio
-//    aux = arquivos_diretorio;
-//    while(aux != NULL){
-//        printf("Arq removido: %s\n", aux->registro.name);
-//        aux = aux->next;
-//        printf("\taux pega proximo\n");
-//        free(arquivos_diretorio);
-//        printf("\tlimpa arq\n");
-//        arquivos_diretorio = aux;
-//        printf("\tpega novo de aux\n");
-//    }
+
     while (arquivos_diretorio!=NULL){
-        printf("~~%s\n", arquivos_diretorio->registro.name);
         arquivos_diretorio = delete_element(arquivos_diretorio, arquivos_diretorio->registro.name);
     }
     //arquivos_diretorio = NULL;
-//    printf("~~%s\n", arquivos_diretorio->registro.name);
-//    if (arquivos_diretorio->next != NULL){
-//        printf("~~%s\n", arquivos_diretorio->next->registro.name);
-//    }
+
     current_dentry = NULL;
 
     diretorio_aberto = false;
