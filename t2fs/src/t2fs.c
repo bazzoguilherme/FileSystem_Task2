@@ -288,6 +288,12 @@ int format2(int partition, int sectors_per_block)
     int num_blocos_bitmap_inode = ceil((float)num_inodes / (8*tam_bloco));
     int num_blocos_bitmap_blocos = ceil((float)num_blocos / (8*tam_bloco));
 
+    memset(buffer, 0, TAM_SETOR);
+    int i_limpa;
+    for (i_limpa=setor_inicio;i_limpa<=setor_fim; i_limpa++){
+        write_sector(i_limpa, buffer);
+    }
+
     struct t2fs_superbloco superbloco;
     char id[4] = "T2FS";
     strcpy(superbloco.id, id);
@@ -300,6 +306,7 @@ int format2(int partition, int sectors_per_block)
     superbloco.diskSize = num_blocos;              // Número total de blocos da partição
     superbloco.Checksum = checksum(&superbloco);   // Soma dos 5 primeiros inteiros de 32 bits do superbloco, complementado de 1
 
+    memset(buffer, 0, TAM_SETOR);
     memcpy(buffer, &superbloco, sizeof(struct t2fs_superbloco));
     if(write_sector(setor_inicio, buffer))
     {
@@ -386,6 +393,7 @@ int format2(int partition, int sectors_per_block)
     int inicio_area_inodes = TAM_SUPERBLOCO + num_blocos_bitmap_blocos + num_blocos_bitmap_inode;
     int setor_inicio_area_inodes = inicio_area_inodes * sectors_per_block;
 
+    memset(buffer, 0, TAM_SETOR);
     memcpy(buffer, &inode_raiz, sizeof(struct t2fs_inode));
     if(write_sector(setor_inicio + setor_inicio_area_inodes, buffer))
     {
@@ -515,7 +523,7 @@ FILE2 create2 (char *filename)
             if (DEBUG_MODE){printf("*Erro fechar dir - ja contem arquivo**\n");}
             return -1;
         }
-        if(delete2(filename) != 0)
+        if(delete2(filename) < 0)
         {
             if (DEBUG_MODE){printf("**Erro deletar arquivo**\n");}
             return -1;
@@ -684,12 +692,14 @@ int delete2 (char *filename)
         // Escreve inode
         memcpy(&buffer[end_inode*sizeof(struct t2fs_inode)], &inode, sizeof(struct t2fs_inode));
         if(write_sector(base + setor_inode, buffer)){
+            printf("!\n");
             closedir2();
             return -1;
         }
 
         arquivos_diretorio = delete_element(arquivos_diretorio, filename);
         if(closedir2()){
+            printf("!!\n");
             return -1;
         }
         return 0;
@@ -714,14 +724,14 @@ int delete2 (char *filename)
     }
 
     int qtd_ponteiros_por_setor = TAM_SETOR / sizeof(DWORD);
-    if(blocos_liberados != qtd_blocos)  // APRESENTA PONTEIRO DE INDIRECAO SIMPLES
+    if(blocos_liberados < qtd_blocos)  // APRESENTA PONTEIRO DE INDIRECAO SIMPLES
     {
         int indice_bloco_indice = inode.singleIndPtr;
         int setor_inicio_bloco = indice_bloco_indice * superbloco_montado.blockSize; //Localizacao do bloco de ind simples
 
         i=0;
         // Para todo setor do bloco de ind simples
-        while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos)
+        while(i<superbloco_montado.blockSize && blocos_liberados < qtd_blocos)
         {
             if(read_sector(base + setor_inicio_bloco + i, buffer))  // Le o setor
             {
@@ -732,7 +742,7 @@ int delete2 (char *filename)
 
             j=0;
             // Para todo ponteiro (para um bloco de dados) nesse setor
-            while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos)
+            while(j<qtd_ponteiros_por_setor && blocos_liberados < qtd_blocos)
             {
                 DWORD ponteiro;
                 memcpy(&ponteiro, &buffer[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
@@ -755,14 +765,14 @@ int delete2 (char *filename)
         }
     }
 
-    if(blocos_liberados != qtd_blocos)   // APRESENTA BLOCOS DE INDIRECAO DUPLA
+    if(blocos_liberados < qtd_blocos)   // APRESENTA BLOCOS DE INDIRECAO DUPLA
     {
         int bloco_indD = inode.doubleIndPtr;
         int setor_inicio_bloco_indD = bloco_indD * superbloco_montado.blockSize; // Localizacao do bloco de ind dupla
 
         k=0;
         // Para todo setor no bloco de ind dupla
-        while(k<superbloco_montado.blockSize && blocos_liberados!=qtd_blocos)
+        while(k<superbloco_montado.blockSize && blocos_liberados<qtd_blocos)
         {
             if(read_sector(base + setor_inicio_bloco_indD + k, buffer))  // Le o setor
             {
@@ -772,7 +782,7 @@ int delete2 (char *filename)
             }
             l = 0;
             // Para todo ponteiro (que aponta para um bloco de ind simples) nesse setor
-            while(i<qtd_ponteiros_por_setor && blocos_liberados!=qtd_blocos)
+            while(i<qtd_ponteiros_por_setor && blocos_liberados<qtd_blocos)
             {
                 DWORD pt1;
                 memcpy(&pt1, &buffer[sizeof(DWORD)*i], sizeof(DWORD)); // Le o ponteiro
@@ -780,7 +790,7 @@ int delete2 (char *filename)
 
                 i=0;
                 // Para todo setor no bloco de ind simples
-                while(i<superbloco_montado.blockSize && blocos_liberados != qtd_blocos)
+                while(i<superbloco_montado.blockSize && blocos_liberados < qtd_blocos)
                 {
                     if(read_sector(base + setor_inicio_bloco + i, buffer2))  // Le o setor
                     {
@@ -790,7 +800,7 @@ int delete2 (char *filename)
                     }
                     j=0;
                     // Para todo ponteiro (para um bloco de dados) nesse setor
-                    while(j<qtd_ponteiros_por_setor && blocos_liberados != qtd_blocos)
+                    while(j<qtd_ponteiros_por_setor && blocos_liberados < qtd_blocos)
                     {
                         DWORD pt2;
                         memcpy(&pt2, &buffer2[j*sizeof(DWORD)], sizeof(DWORD)); // Le o ponteiro
@@ -1816,6 +1826,17 @@ int carregaRegistrosDataPtr(DWORD blockNumber)
             if(registro.TypeVal != 0x00)
             {
                 printf("&Arquivo achado: %s\n", registro.name);
+                struct t2fs_inode inode;
+                unsigned char b[256] = {0};
+                int inicio_area_inodes = TAM_SUPERBLOCO + superbloco_montado.freeBlocksBitmapSize + superbloco_montado.freeInodeBitmapSize;
+                int setor_inicio_area_inodes = inicio_area_inodes * superbloco_montado.blockSize;
+                int inodes_por_setor = TAM_SETOR / sizeof(struct t2fs_inode);
+                int setor_inode = setor_inicio_area_inodes + (registro.inodeNumber / inodes_por_setor);
+                int end_inode = registro.inodeNumber % inodes_por_setor;
+
+                read_sector(base + setor_inode, b);
+                memcpy(&inode, &b[end_inode*sizeof(struct t2fs_inode)], sizeof(struct t2fs_inode));
+                printf("Inode ref: %d\n", inode.RefCounter);
                 arquivos_diretorio = insert_element(arquivos_diretorio, registro); // Adiciona registro em lista de arquivos abertos
             }
             else

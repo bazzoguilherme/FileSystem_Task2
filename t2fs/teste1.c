@@ -50,6 +50,7 @@ int main(){
 	printf("--t1: Cria arq 1\n");
 	getchar();
     printf("t1: Arq1: %d\n", create2("arq1.txt"));
+    opendir2();
     printf("t1:PARA AQUI\n");
     getchar();
 //	lista_dir();
