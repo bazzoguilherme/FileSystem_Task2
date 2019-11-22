@@ -2669,6 +2669,12 @@ int hln2(char *linkname, char *filename)
 
     // Incrementa contador de referencia. Inode do hardlink eh o mesmo que o inode do arquivo referenciado
     inode.RefCounter++;
+    memcpy(&buffer[end_inode*sizeof(struct t2fs_inode)], &inode, sizeof(struct t2fs_inode)); // escreve inode de volta a memoria
+    if(write_sector(base + setor_inode, buffer)){
+        closedir2();
+        return -1;
+    }
+
     registro_hardlink.inodeNumber = indice_inode;
     arquivos_diretorio = insert_element(arquivos_diretorio, registro_hardlink);
 
