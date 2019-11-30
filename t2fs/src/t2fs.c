@@ -1525,8 +1525,8 @@ int write2 (FILE2 handle, char *buffer, int size)
 /// Escrita de dados por INDIREÇÃO SIMPLES
     unsigned char buffer_setor_indirecao[TAM_SETOR], buffer_setor_dados[TAM_SETOR];
     unsigned int i, j, k;
-    unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
-    unsigned indice_bloco_dados, setor_inicio_bloco_dados;
+    int indice_bloco_indirecao, indice_bloco_dados;
+    unsigned int setor_inicio_bloco_dados, setor_inicio_bloco_indirecao;
     DWORD ponteiro;
 
     if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco && bytes_write < size)
@@ -2483,7 +2483,7 @@ int sln2 (char *linkname, char *filename)
     }
 
     unsigned char buffer[TAM_SETOR];
-    memcpy(buffer, filename, sizeof(filename));
+    memcpy(buffer, filename, strlen(filename));
 
     // Escreve o bloco de dados no disco
     int setor_inicio_bloco = indice_bloco * superbloco_montado.blockSize;
