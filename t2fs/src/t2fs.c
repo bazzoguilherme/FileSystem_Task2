@@ -1536,6 +1536,7 @@ int write2 (FILE2 handle, char *buffer, int size)
     unsigned int i, j, k;
     int indice_bloco_indirecao, indice_bloco_dados;
     unsigned int setor_inicio_bloco_indirecao, setor_inicio_bloco_dados;
+
     DWORD ponteiro;
 
     if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco && bytes_write < size)
@@ -2500,6 +2501,7 @@ int sln2 (char *linkname, char *filename)
     }
 
     unsigned char buffer[TAM_SETOR];
+
     memcpy(buffer, filename, strlen(filename));
 
     // Escreve o bloco de dados no disco
