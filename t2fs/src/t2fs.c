@@ -14,7 +14,7 @@
 #define MAX_OPEN_FILE 10
 #define TAM_SETOR 256    // Tamanho de um setor em bytes
 
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 
 typedef struct file_t2fs
 {
@@ -83,6 +83,7 @@ int get_element(Linked_List* list, char* nome_registro_, struct t2fs_record* reg
     Linked_List* aux = list;
     while (aux!=NULL)
     {
+        printf(">> %s xxx %s\n", aux->registro.name, nome_registro_);
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
             *registro = aux->registro;
@@ -135,6 +136,7 @@ boolean contains(Linked_List* list, char* nome_registro_)
     Linked_List* aux = list;
     while (aux!=NULL)
     {
+        printf(">> %s xxx %s\n", aux->registro.name, nome_registro_);
         if(strcmp(aux->registro.name, nome_registro_) == 0)
         {
             return true;
@@ -928,6 +930,7 @@ FILE2 open2 (char *filename)
 
         if(!contains(arquivos_diretorio, nome_arq_referenciado))
         {
+            if (DEBUG_MODE){printf("**Erro nao contem arq em dir**\n");}
             closedir2();
             return -1; // Arquivo referenciado inexistente
         }
@@ -2483,7 +2486,7 @@ int sln2 (char *linkname, char *filename)
     }
 
     unsigned char buffer[TAM_SETOR];
-    memcpy(buffer, filename, sizeof(filename));
+    memcpy(buffer, filename, strlen(filename));
 
     // Escreve o bloco de dados no disco
     int setor_inicio_bloco = indice_bloco * superbloco_montado.blockSize;

@@ -43,6 +43,38 @@ int main(){
 	getchar();
 
 
+    printf("t1: cria arquivo\n");
+    getchar();
+    FILE2 file1 = create2("sisop.txt");
+    printf("Arquivo criado com id: %d\n", file1);
+    getchar();
+    char buffer[256] = {"Texto teste"};
+    printf("Write >> %d\n", write2(file1, buffer, strlen(buffer)));
+    getchar();
+    close2(file1);
+    open2("sisop.txt");
+    char buffer_leitura[256] = {0};
+    int lidos = read2(file1, buffer_leitura, 5);
+    printf("Read >> %d %s\n", lidos, buffer_leitura);
+
+    if (hln2("hardlink.txt", "sisop.txt") == 0){
+        FILE2 hl = open2("hardlink.txt");
+        char buffer_leitura_hl[256] = {0};
+        int lidos_hl = read2(hl, buffer_leitura_hl, 3);
+        printf("Read_hl >> %d %s\n", lidos_hl, buffer_leitura_hl);
+    }
+    if (sln2("soft.txt", "sisop.txt") == 0){
+        FILE2 sl = open2("soft.txt");
+        printf("Read_sl >> %d\n", sl);
+        char buffer_leitura_sl[256] = {0};
+        int lidos_sl = read2(sl, buffer_leitura_sl, 2);
+        printf("Read_sl >> %d %s\n", lidos_sl, buffer_leitura_sl);
+    }
+
+
+
+    return 0;
+
     printf("t1 Printa dir e cria alguns arquivos\n");
     getchar();
 	lista_dir();

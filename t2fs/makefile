@@ -20,7 +20,11 @@ all: t2fs
 t2fs: $(SRC_DIR)/t2fs.c $(INC_DIR)/*.h
 	$(CC) -o $(BIN_DIR)/t2fs.o -c $(SRC_DIR)/t2fs.c -Wall
 
+teste1: all
+	$(CC) -o teste1 teste1.c -L$(LIB_DIR) -lt2fs -Wall -lm
+
 clean:
 	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/t2fs.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
+	rm -f teste1
 
 
