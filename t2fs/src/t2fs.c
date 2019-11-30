@@ -211,10 +211,12 @@ int aloca_bloco()
     int i;
     if((bloco = searchBitmap2(BITMAP_DADOS, 0)) < 0)   // Se retorno da funcao for negativo, deu erro
     {
+        if (DEBUG_MODE){printf("*ALOCA ERRO*\n");}
         return bloco;
     }
 
     if(setBitmap2(BITMAP_DADOS, bloco, 1)){
+        if (DEBUG_MODE){printf("*ALOCA -1*\n");}
         return -1;
     }
 
@@ -1408,6 +1410,7 @@ int write2 (FILE2 handle, char *buffer, int size)
     ///Caso a escrita seja no primeiro bloco direto
     if(open_files[handle].current_pointer < bytes_por_bloco && bytes_write < size)
     {
+        if (DEBUG_MODE){printf("*BLOCO DIRETO 1*\n");}
         int indice_bloco_direto_a;
         if(inode.dataPtr[0] > -1)
         {
@@ -1418,6 +1421,7 @@ int write2 (FILE2 handle, char *buffer, int size)
             indice_bloco_direto_a = aloca_bloco();
             if(indice_bloco_direto_a <= -1)
             {
+                if (DEBUG_MODE){printf("*Acabou escrita bloco direo 1*\n");}
                 return bytes_write;
             }
             inode.dataPtr[0] = indice_bloco_direto_a;
@@ -1469,6 +1473,7 @@ int write2 (FILE2 handle, char *buffer, int size)
     /// Caso a escrita seja no segundo bloco direto
     if(open_files[handle].current_pointer < 2*bytes_por_bloco && bytes_write < size)
     {
+        if (DEBUG_MODE){printf("*BLOCO DIRETO 2*\n");}
         int indice_bloco_direto_b;
         if(inode.dataPtr[1] > -1)
         {
@@ -1479,6 +1484,7 @@ int write2 (FILE2 handle, char *buffer, int size)
             indice_bloco_direto_b = aloca_bloco();
             if(indice_bloco_direto_b <= -1)
             {
+                if (DEBUG_MODE){printf("*Acabou escrita bloco direto 2*\n");}
                 return bytes_write;
             }
             inode.dataPtr[1] = indice_bloco_direto_b;
@@ -1528,17 +1534,20 @@ int write2 (FILE2 handle, char *buffer, int size)
 /// Escrita de dados por INDIREÇÃO SIMPLES
     unsigned char buffer_setor_indirecao[TAM_SETOR], buffer_setor_dados[TAM_SETOR];
     unsigned int i, j, k;
-    unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
-    unsigned indice_bloco_dados, setor_inicio_bloco_dados;
+    int indice_bloco_indirecao, indice_bloco_dados;
+    unsigned int setor_inicio_bloco_indirecao, setor_inicio_bloco_dados;
     DWORD ponteiro;
 
     if(open_files[handle].current_pointer < (bytes_por_bloco/sizeof(DWORD))*bytes_por_bloco && bytes_write < size)
     {
+        if (DEBUG_MODE){printf("*BLOCO INDIRETO*\n");}
         if(inode.singleIndPtr == -1)
         {
             indice_bloco_indirecao = aloca_bloco();
+
             if(indice_bloco_indirecao <= -1)
             {
+                if (DEBUG_MODE){printf("*-- Aloca -1 * Acabou escrita indirecao simples* ~1\n");}
                 return bytes_write;
             }
             inode.singleIndPtr = indice_bloco_indirecao;
@@ -1577,6 +1586,7 @@ int write2 (FILE2 handle, char *buffer, int size)
                     indice_bloco_dados = aloca_bloco();
                     if(indice_bloco_dados <= -1)
                     {
+                        if (DEBUG_MODE){printf("*Acabou escrita indirecao simples* ~2\n");}
                         return bytes_write;
                     }
                     memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &indice_bloco_dados, sizeof(DWORD));
@@ -1648,12 +1658,14 @@ int write2 (FILE2 handle, char *buffer, int size)
 
     if(open_files[handle].current_pointer < ((bytes_por_bloco/sizeof(DWORD))^2)*bytes_por_bloco && bytes_write < size)
     {
+        if (DEBUG_MODE){printf("*BLOCO INDIRETO DUPLO*\n");}
         if(inode.doubleIndPtr == -1)
         {
             inode.doubleIndPtr = aloca_bloco();
             if(inode.doubleIndPtr <= -1)
             {
                 inode.doubleIndPtr = -1;
+                if (DEBUG_MODE){printf("*Acabou escrita indirecao dupla* ~1\n");}
                 return bytes_write;
             }
         }
@@ -1689,6 +1701,7 @@ int write2 (FILE2 handle, char *buffer, int size)
                     pt1 = aloca_bloco();
                     if(pt1 <= -1)
                     {
+                        if (DEBUG_MODE){printf("*Acabou escrita indirecao dupla* ~2\n");}
                         return bytes_write;
                     }
                     memcpy(&buffer_setor_indirecao_dupla[sizeof(DWORD)*l], &pt1, sizeof(DWORD));
@@ -1726,6 +1739,7 @@ int write2 (FILE2 handle, char *buffer, int size)
                             pt2 = aloca_bloco();
                             if(pt2 <= -1)
                             {
+                                if (DEBUG_MODE){printf("*Acabou escrita indirecao dupla* ~3\n");}
                                 return bytes_write;
                             }
                             memcpy(&buffer_setor_indirecao[j*sizeof(DWORD)], &pt2, sizeof(DWORD)); // Escreve o ponteiro

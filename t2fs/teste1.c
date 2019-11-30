@@ -42,6 +42,14 @@ int main(){
 	printf("t1: mount done\n");
 	getchar();
 
+    char buffer_grande[20000] = {0};
+    char str[22] = "Frase de 22 caracteres\n";
+    strcpy(buffer_grande, str);
+    int i=0;
+    for (i=0;i<40;i++){
+        strcat(buffer_grande, str);
+    }
+    strcat(buffer_grande, "FIM");
 
     printf("t1: cria arquivo\n");
     getchar();
@@ -49,28 +57,30 @@ int main(){
     printf("Arquivo criado com id: %d\n", file1);
     getchar();
     char buffer[256] = {"Texto teste"};
-    printf("Write >> %d\n", write2(file1, buffer, strlen(buffer)));
+    printf("Write >> %d\n", write2(file1, buffer_grande, strlen(buffer_grande)));
     getchar();
     close2(file1);
-    open2("sisop.txt");
-    char buffer_leitura[256] = {0};
-    int lidos = read2(file1, buffer_leitura, 5);
+    file1 = open2("sisop.txt");
+    char buffer_leitura[906] = {0};
+    int lidos = read2(file1, buffer_leitura, 905);
+    close2(file1);
     printf("Read >> %d %s\n", lidos, buffer_leitura);
-
+    getchar();
     if (hln2("hardlink.txt", "sisop.txt") == 0){
         FILE2 hl = open2("hardlink.txt");
-        char buffer_leitura_hl[256] = {0};
-        int lidos_hl = read2(hl, buffer_leitura_hl, 3);
+        char buffer_leitura_hl[906] = {0};
+        int lidos_hl = read2(hl, buffer_leitura_hl, 905);
         printf("Read_hl >> %d %s\n", lidos_hl, buffer_leitura_hl);
+        close2(hl);
     }
+    getchar();
     if (sln2("soft.txt", "sisop.txt") == 0){
         FILE2 sl = open2("soft.txt");
-        printf("Read_sl >> %d\n", sl);
-        char buffer_leitura_sl[256] = {0};
-        int lidos_sl = read2(sl, buffer_leitura_sl, 2);
+        char buffer_leitura_sl[906] = {0};
+        int lidos_sl = read2(sl, buffer_leitura_sl, 905);
         printf("Read_sl >> %d %s\n", lidos_sl, buffer_leitura_sl);
+        close2(sl);
     }
-
 
 
     return 0;
