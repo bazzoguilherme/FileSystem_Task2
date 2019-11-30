@@ -1,0 +1,8 @@
+- sln2 (softlink)
+	- Descricao:
+		Bug reportado em sln2, nome do arquivo não estava sendo escrito e/ou lido corretamente.
+		Erro aparecia na quando operação de OPEN2 era chamada, pois não encontrava arquivo correspondente ao que link indicava, pois nome do arquivo não era encontrado (estava comparando com /0.
+	- Alteracao:
+		-- memcpy(buffer, filename, sizeof(filename)); Nome estava sendo escrito apenas em parte, não abrandengo todos os caracteres da palavra.
+		++ memcpy(buffer, filename, strlen(filename)); 
+	
