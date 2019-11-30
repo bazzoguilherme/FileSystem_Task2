@@ -5,5 +5,5 @@
 *.exe
 
 # Disco auxiliar
-*/t2fs_disk_aux.dat
+*/t2fs_disk_.dat
 */t2fs_disk.dat
