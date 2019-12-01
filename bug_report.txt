@@ -49,7 +49,7 @@
 	- Motivo:
 		*Mesmo motivo apresentado em "Erro na escrita de arquivo" (sendo ele sobre o unsigned int)
 	- Alteracao:
-		>>>
+		<<<
 		unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
 		unsigned indice_bloco_dados, setor_inicio_bloco_dados;
 		===
