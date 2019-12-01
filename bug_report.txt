@@ -1,23 +1,39 @@
 - sln2 (softlink)
 	- Descricao:
 		Bug reportado em sln2, nome do arquivo não estava sendo escrito e/ou lido corretamente.
-		Erro aparecia na quando operação de OPEN2 era chamada, pois não encontrava arquivo correspondente ao que link indicava, pois nome do arquivo não era encontrado (estava comparando com /0.
+		Erro aparecia na quando operação de OPEN2 era chamada, não encontrava arquivo correspondente ao que link indicava, pois nome do arquivo não era encontrado (estava comparando com NULL).
+	- Motivo:
+		Ideia era pegar o tamanho da palavra para inserir no link, podendo assim fazer a referencia ao arquivo correto, entretanto, usamos incorretamente a função sizeof ao invés de strlen, o que nem sempre englobava toda a palavra. 
 	- Alteracao:
 		-- memcpy(buffer, filename, sizeof(filename)); Nome estava sendo escrito apenas em parte, não abrandengo todos os caracteres da palavra.
 		++ memcpy(buffer, filename, strlen(filename)); 
 
 
+
 - Erro na escrita de arquivo
 	- Descricao:
-		Não estava sendo realizada a escria no arquivo
-
+		Não estava sendo realizada a escria no arquivo corretamente depois dos blocos diretos (erro a partir do bloco indireto).
 	- Motivo:
-		Devido a variavel de indice de bloco ser `unsigned int`, estava ocorrendo erro na comparação com `-1` dentro de if, retornando `false` sempre
-
+		Devido a variavel de indice de bloco ser `unsigned int` quando ia realizar a verificação de validez do bloco (indice <= -1), tratava o `-1` como unsigned int também. Isso resultava em uma comparação de (indice <= 0xFFFFFFFF), o que sempre retornava true.
 	- Alteracao:
+		Correção de alguns tipos que de variavel.
 		<<<
 		unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
     	unsigned indice_bloco_dados, setor_inicio_bloco_dados;
 		>>>
 		int indice_bloco_indirecao, indice_bloco_dados;
 	    unsigned int setor_inicio_bloco_indirecao, setor_inicio_bloco_dados;
+
+
+- Erro Mount
+	- Descricao:
+		Erro acontecia ao mudar de partição e realizar `mount`.
+	- Motivo:
+		Estava sendo lido a parte errada dos dados.
+		Leitura sendo realizada na parte errada dos dados - Alteriormente, erro aparecia na format também, porém, erro foi percebido pelo grupo antes da entrega. Em testes posteriores percebeu-se que havia esse mesmo erro em mount.
+	- Alteracao:
+		int setor_inicio = getDado(buffer, 8 + 24*partition, 4); // Leitura de dado indicando o valor do setor inicial.
+		int setor_inicio = getDado(buffer, 8 + 32*partition, 4);
+
+
+
