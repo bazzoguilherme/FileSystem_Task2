@@ -240,91 +240,50 @@ int main(){
     close2(file1);
     printf("Leitura: %d %s\n", lidos, buffer_leitura);
 
+    getchar();
+    printf("Tentando criar outro arquivo com mesmo nome\n");
+    getchar();
+    FILE2 new_file = create2("sisop.txt");
+    printf("Criacao de mesmo nome : %d\n", new_file);
+    close2(new_file);
+    new_file = open2("sisop.txt");
+    printf("Escrita nova: %d\n", write2(new_file, escrita_nova, strlen(escrita_nova)));
+    getchar();
+    close2(new_file);
+    new_file = open2("sisop.txt");
+    lidos = read2(new_file, buffer_leitura, 200);
+    close2(new_file);
+    printf("Leitura: %d %s\n", lidos, buffer_leitura);
+
+    getchar();
+    printf("Criacao de varios arquivos.. testando a criacao deles e handle de arquivos abertos\n");
+    getchar();
+
+    printf("\nnew_file : %d\n", create2("taylor.com"));
+    printf("new_file : %d\n", create2("file.json"));
+    printf("new_file : %d\n", create2("sos.socorro"));
+    printf("new_file : %d\n", create2("new.tzt"));
+    printf("new_file : %d\n", create2("teste.xml"));
+    printf("new_file : %d\n", create2("mais_files.md"));
+    printf("new_file : %d\n", create2("arq.txt"));
+    printf("new_file : %d\n", create2("musica.zip"));
+    printf("new_file : %d\n", create2("backup.bk"));
+    printf("new_file : %d\n", create2("mais.txt"));
+    printf("new_file : %d\n", create2("fim.final"));
+
+    getchar();
+    printf("Deletando alguns para dar espaço para criar mais\n");
+    getchar();
+
+    //close2();
+    printf("no_file : %d\n", delete2("teste.xml"));
+    return 0;
+    printf("no_file : %d\n", delete2("mais_files.md"));
+    printf("no_file : %d\n", delete2("arq.txt"));
+
+    printf("Cria final : %d\n", create2("fim.final"));
 
 }
-    return 0;
-
-    printf("t1 Printa dir e cria alguns arquivos\n");
-    getchar();
-	lista_dir();
-	getchar();
-	printf("--t1: Cria arq 1\n");
-	getchar();
-    printf("t1: Arq1: %d\n", create2("arq1.txt"));
-    opendir2();
-    printf("t1:PARA AQUI\n");
-    getchar();
-//	lista_dir();
-//	getchar();
-	printf("--t1: Cria arq 2\n");
-	getchar();
-	printf("t1: Arq2: %d\n", create2("arq2.txt"));
-	return 0;
-    create2("Foto.jpg");
-	lista_dir();
-    create2("TrabalhoSisop.c");
-    create2("Senhas.txt");
-    create2("Minecraft.exe");
-    create2("Cogumelo.exe");
-    create2("Sisop2.exe");
-    create2("BYOB.mp3");
-    create2("Novo Documento.txt");
-    //create2("Receita de Miojo.txt");
-    //create2("Notas da P2.pdf");
-	lista_dir();
-	getchar();
-
-    hln2("linktop.txt", "Senhas.txt");
-
-    //sln2("linktop.txt", "Senhas.txt");
-
-    DIRENT2 de;
-
-    //write2(3, buffer, szb);
-    close2(0);
-    close2(1);
-    close2(2);
-    close2(3);
-    close2(4);
-    close2(5);
-    close2(6);
-    close2(7);
-    close2(8);
-    close2(9);
-    //close(10);
-
-    closedir2();
-
-    //strcpy(buffer, "Espalha rama pelo chao.");
-
-    opendir2();
-
-    //delete2("Senhas.txt");
-    //delete2("linktop.txt");
-
-    while(!readdir2(&de)){
-         printf("Nome: %s\nTamanho: %d Bytes\n\n", de.name, de.fileSize);
-    }
-
-//    FILE2 hand0 = open2("Senhas.txt");
-//    FILE2 hand1 = open2("linktop.txt");
-//    printf("");
-
-//    strcpy(buffer, "AAAAA");
-//    for(i = 0; i < 500; i++)
-//       strcat(buffer, "BBBB");
-//
-//    write2(hand0, buffer, strlen(buffer));
-//    close2(hand0);
-//    printf("Buffer2: %s\n", buffer2);
-//
-//    read2(hand1, buffer3, szb);
-//    close2(hand1);
-//    printf("Buffer3: %s\n", buffer3);
-//
-//    closedir2();
-
-    umount();
     return 0;
 }
 

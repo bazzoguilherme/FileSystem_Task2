@@ -43,4 +43,30 @@
 		int setor_inicio = getDado(buffer, 8 + 32*partition, 4);
 
 
+- Erro Closedir2
+	- Descrição:
+		Erro ao tentar escrever arquivos nos blocos indiretos do diretorio
+	- Motivo:
+		*Mesmo motivo apresentado em "Erro na escrita de arquivo" (sendo ele sobre o unsigned int)
+	- Alteracao:
+		>>>
+		unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
+		unsigned indice_bloco_dados, setor_inicio_bloco_dados;
+		===
+		>>>
+		int indice_bloco_indirecao, indice_bloco_dados;
+		unsigned int setor_inicio_bloco_indirecao, setor_inicio_bloco_dados;
+
+- Erro open2
+	- Descrição:
+		Função open2 não retornando o handle correto para arquivo aberto.
+	- Motivo:
+		Devido a várias funções terem seu retorno -1 indicando erro e 0 caso sucesso de execução, por falta de atenção retornavamos 0 ao invés do handle do arquivo aberto (o que, nesse caso, significa o sucesso de execução).
+	- Alteração:
+		<<<
+		return 0;
+		===
+		>>>
+		return pos_insercao_open_file;
+
 

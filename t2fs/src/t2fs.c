@@ -954,7 +954,7 @@ FILE2 open2 (char *filename)
     open_files[pos_insercao_open_file] = new_open_file; // Insere em arquivos abertos
 
     if (DEBUG_MODE){printf("> OPEN end\n");}
-    return 0;
+    return pos_insercao_open_file;
 }
 
 /*-----------------------------------------------------------------------------
@@ -2209,8 +2209,8 @@ int closedir2 (void)
 /// Escrita por INDIREÇÃO SIMPLES
     unsigned char buffer_setor_indirecao[TAM_SETOR];
     unsigned int i, j, k;
-    unsigned int indice_bloco_indirecao, setor_inicio_bloco_indirecao;
-    unsigned indice_bloco_dados, setor_inicio_bloco_dados;
+    int indice_bloco_indirecao, indice_bloco_dados;
+    unsigned int setor_inicio_bloco_indirecao, setor_inicio_bloco_dados;
     DWORD ponteiro;
 
     if(registros_escritos < qtd_registros)
