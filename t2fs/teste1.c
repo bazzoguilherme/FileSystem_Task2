@@ -21,6 +21,7 @@ void lista_dir(){
 }
 
 int main(){
+{
 
 	printf("t1: Inicio..\n\n");
 	getchar();
@@ -40,6 +41,11 @@ int main(){
 	}
 
 	printf("t1: mount done\n");
+	getchar();
+
+	printf("Printa diretorio de nova paricao\n");
+	getchar();
+	lista_dir();
 	getchar();
 
     char buffer_grande[20000] = {0};
@@ -82,7 +88,160 @@ int main(){
         close2(sl);
     }
 
+    printf("Listando diretorio");
+    getchar();
+    lista_dir();
+    printf("\nAgora deletando arq hardlink\nJa verificado que deletando original o hardlink funciona!\n");
+    getchar();
+    delete2("hardlink.txt");
 
+    lista_dir();
+
+    printf("Tenta printar conteudo hardlink\n");
+    getchar();
+    FILE2 hl = open2("hardlink.txt");
+    {
+        char buffer_leitura_hl[906] = {0};
+        int lidos_hl = read2(hl, buffer_leitura_hl, 905);
+        printf("Read_hl >> %d %s\n", lidos_hl, buffer_leitura_hl);
+        close2(hl);
+    }
+    getchar();
+    printf("Tenta printar conteudo softlink\n");
+    getchar();
+    {
+        FILE2 sl = open2("soft.txt");
+        char buffer_leitura_sl[906] = {0};
+        int lidos_sl = read2(sl, buffer_leitura_sl, 905);
+        printf("Read_sl >> %d %s\n", lidos_sl, buffer_leitura_sl);
+        close2(sl);
+    }
+
+    printf("Abrindo arquivo e escrevendo novamente nele\n");
+    getchar();
+    file1 = open2("sisop.txt");
+    char escrita_nova[200] = "Novo texto sendo inserido em arquivo";
+    printf("Escrita nova: %d\n", write2(file1, escrita_nova, strlen(escrita_nova)));
+    getchar();
+    close2(file1);
+    file1 = open2("sisop.txt");
+    lidos = read2(file1, buffer_leitura, 200);
+    close2(file1);
+    printf("Leitura: %d %s\n", lidos, buffer_leitura);
+
+    printf("Umount : %d\n\n", umount());
+    getchar();
+}
+//--------------------------------------------------------------------------------------------------
+{
+    printf("t1: Inicio..\n\n");
+	getchar();
+
+	printf("\n --t1:  FORMAT\n");
+    if (format2(1, 1) == -1){
+		printf("t1: Erro FORMAT\n");
+	}
+
+	printf("t1: format done\n");
+    getchar();
+
+
+	printf("\n --t1:  MOUNT\n");
+    if (mount(1) == -1){
+		printf("t1: Erro MOUNT\n");
+	}
+
+	printf("t1: mount done\n");
+	getchar();
+
+	printf("Printa diretorio de nova paricao\n");
+	getchar();
+	lista_dir();
+	getchar();
+
+    char buffer_grande[20000] = {0};
+    char str[22] = "Frase de 22 caracteres\n";
+    strcpy(buffer_grande, str);
+    int i=0;
+    for (i=0;i<40;i++){
+        strcat(buffer_grande, str);
+    }
+    strcat(buffer_grande, "FIM");
+
+    printf("t1: cria arquivo\n");
+    getchar();
+    FILE2 file1 = create2("sisop.txt");
+    printf("Arquivo criado com id: %d\n", file1);
+    getchar();
+    char buffer[256] = {"Texto teste"};
+    printf("Write >> %d\n", write2(file1, buffer_grande, strlen(buffer_grande)));
+    getchar();
+    close2(file1);
+    file1 = open2("sisop.txt");
+    char buffer_leitura[906] = {0};
+    int lidos = read2(file1, buffer_leitura, 905);
+    close2(file1);
+    printf("Read >> %d %s\n", lidos, buffer_leitura);
+    getchar();
+    if (hln2("hardlink.txt", "sisop.txt") == 0){
+        FILE2 hl = open2("hardlink.txt");
+        char buffer_leitura_hl[906] = {0};
+        int lidos_hl = read2(hl, buffer_leitura_hl, 905);
+        printf("Read_hl >> %d %s\n", lidos_hl, buffer_leitura_hl);
+        close2(hl);
+    }
+    getchar();
+    if (sln2("soft.txt", "sisop.txt") == 0){
+        FILE2 sl = open2("soft.txt");
+        char buffer_leitura_sl[906] = {0};
+        int lidos_sl = read2(sl, buffer_leitura_sl, 905);
+        printf("Read_sl >> %d %s\n", lidos_sl, buffer_leitura_sl);
+        close2(sl);
+    }
+
+    printf("Listando diretorio");
+    getchar();
+    lista_dir();
+    printf("\nAgora deletando arq hardlink\nJa verificado que deletando original o hardlink funciona!\n");
+    getchar();
+    delete2("hardlink.txt");
+
+    lista_dir();
+
+    printf("Tenta printar conteudo hardlink\n");
+    getchar();
+    FILE2 hl = open2("hardlink.txt");
+    {
+        char buffer_leitura_hl[906] = {0};
+        int lidos_hl = read2(hl, buffer_leitura_hl, 905);
+        printf("Read_hl >> %d %s\n", lidos_hl, buffer_leitura_hl);
+        close2(hl);
+    }
+    getchar();
+    printf("Tenta printar conteudo softlink\n");
+    getchar();
+    {
+        FILE2 sl = open2("soft.txt");
+        char buffer_leitura_sl[906] = {0};
+        int lidos_sl = read2(sl, buffer_leitura_sl, 905);
+        printf("Read_sl >> %d %s\n", lidos_sl, buffer_leitura_sl);
+        close2(sl);
+    }
+
+    printf("Abrindo arquivo e escrevendo novamente nele\n");
+    getchar();
+    file1 = open2("sisop.txt");
+    char escrita_nova[200] = "Novo texto sendo inserido em arquivo";
+    printf("Escrita nova: %d\n", write2(file1, escrita_nova, strlen(escrita_nova)));
+    getchar();
+    close2(file1);
+    file1 = open2("sisop.txt");
+    lidos = read2(file1, buffer_leitura, 200);
+    close2(file1);
+    printf("Leitura: %d %s\n", lidos, buffer_leitura);
+
+
+}
     return 0;
 
     printf("t1 Printa dir e cria alguns arquivos\n");

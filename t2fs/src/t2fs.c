@@ -435,7 +435,7 @@ int mount(int partition)
         return -1;
     }
 
-    int setor_inicio = getDado(buffer, 8 + 24*partition, 4);
+    int setor_inicio = getDado(buffer, 8 + 32*partition, 4);
     if(read_sector(setor_inicio, buffer))  // Le o superbloco da particao
     {
         return -1;
